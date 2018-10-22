@@ -1,0 +1,15 @@
+Package: maml
+Title: General functions for the MaML project
+Version: 0.1
+Authors@R: Erik de Vries
+Description: Provide general functions in support of the MaML project, like data retrieval and parsing
+Depends: R (>= 3.4.4)
+License: Copyright Erik de Vries
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.0
+Depends: elastic,
+    jsonlite,
+    parallel,
+    tidyverse,
+    quanteda

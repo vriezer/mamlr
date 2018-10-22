@@ -1,0 +1,48 @@
+#' Generates dfm from ElasticSearch output
+#'
+#' Generates dfm from ElasticSearch output
+#' @param out The elasticizer-generated data frame
+#' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
+#' @return A Quanteda dfm 
+#' @export
+#' @examples
+#' dfm_gen(out, words = '999')
+
+
+#################################################################################################
+#################################### DFM generator #############################
+#################################################################################################
+
+# filter(`_source.codes.timeSpent` != -1) %>% ### Exclude Norwegian summer sample hack
+
+dfm_gen <- function(out,words = '999') {
+  # Create subset with just ids, codes and text
+  out <- out %>%
+    select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
+  fields <- length(names(out))
+  out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, words = words, out = out, mc.cores = detectCores()))
+  # out$codes <- out$`_source.codes.majorTopic` %>%
+  out <- out %>%
+    mutate(codes = case_when(
+      .$`_source.codes.timeSpent` == -1 ~ NA_character_,
+      TRUE ~ .$`_source.codes.majorTopic`
+    )
+    ) %>%
+    mutate(junk = case_when(
+      .$codes == 2301 ~ 1,
+      .$codes == 3101 ~ 1,
+      .$codes == 34 ~ 1,
+      .$`_source.codes.timeSpent` == -1 ~ NA_real_,
+      TRUE ~ 0
+    )
+    ) %>%
+    mutate(aggregate = .$codes %>%
+             str_pad(4, side="right", pad="a") %>%
+             str_match("([0-9]{1,2})?[0|a][1-9|a]") %>%
+             .[,2] %>%
+             as.numeric()
+    )
+  dfm <- corpus(out$merged, docnames = out$`_id`, docvars = out[,-seq(1,(length(names(out))-3),1)]) %>%
+    dfm(tolower = T, stem = F, remove_punct = T, valuetype = "regex", ngrams = 1)
+  return(dfm)
+}
