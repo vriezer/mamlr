@@ -1,7 +1,7 @@
-Package: maml
+Package: mamlr
 Title: General functions for the MaML project
 Version: 0.1
-Authors@R: Erik de Vries
+Authors: Erik de Vries
 Description: Provide general functions in support of the MaML project, like data retrieval and parsing
 Depends: R (>= 3.4.4)
 License: Copyright Erik de Vries
