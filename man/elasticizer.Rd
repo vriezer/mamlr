@@ -4,7 +4,8 @@
 \alias{elasticizer}
 \title{Generate a data frame out of unparsed Elasticsearch JSON}
 \usage{
-elasticizer(query, src = T, index = "maml", es_pwd = "unkown")
+elasticizer(query, src = T, index = "maml",
+  es_pwd = .rs.askForPassword("Elasticsearch READ"))
 }
 \arguments{
 \item{query}{A JSON-formatted query in the Elasticsearch query DSL}
@@ -12,8 +13,6 @@ elasticizer(query, src = T, index = "maml", es_pwd = "unkown")
 \item{src}{Logical (true/false) indicating whether or not the source of each document should be retrieved}
 
 \item{index}{The name of the Elasticsearch index to search through}
-
-\item{es_pwd}{The (very secret, and thus not stored in any scripts!) password to use for read access to the database}
 }
 \value{
 A data frame containing all the search results
@@ -22,5 +21,5 @@ A data frame containing all the search results
 Generate a data frame out of unparsed Elasticsearch JSON
 }
 \examples{
-elasticizer(query, src = TRUE, index = "maml", es_pwd = "secret")
+elasticizer(query, src = TRUE, index = "maml")
 }

@@ -4,12 +4,14 @@
 \alias{dfm_gen}
 \title{Generates dfm from ElasticSearch output}
 \usage{
-dfm_gen(out, words = "999")
+dfm_gen(out, words = "999", text = c("lemmas", "full"))
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}
 
 \item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
+
+\item{text}{String indicating whether the "merged" field will contain the "full" text, or "lemmas"}
 }
 \value{
 A Quanteda dfm

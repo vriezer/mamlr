@@ -3,6 +3,7 @@
 #' Generates dfm from ElasticSearch output
 #' @param out The elasticizer-generated data frame
 #' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
+#' @param text String indicating whether the "merged" field will contain the "full" text, or "lemmas"
 #' @return A Quanteda dfm 
 #' @export
 #' @examples
@@ -15,12 +16,24 @@
 
 # filter(`_source.codes.timeSpent` != -1) %>% ### Exclude Norwegian summer sample hack
 
-dfm_gen <- function(out,words = '999') {
+dfm_gen <- function(out,words = '999', text = c("lemmas","full")) {
   # Create subset with just ids, codes and text
   out <- out %>%
     select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
   fields <- length(names(out))
-  out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, words = words, out = out, mc.cores = detectCores()))
+  if (text == "lemmas") {
+    out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, words = words, out = out, mc.cores = detectCores()))
+  }
+  if (text == "full") {
+    out$merged <- str_c(str_replace_na(out$`_source.title`, replacement = " "),
+                        str_replace_na(out$`_source.subtitle`, replacement = " "),
+                        str_replace_na(out$`_source.preteaser`, replacement = " "),
+                        str_replace_na(out$`_source.teaser`, replacement = " "),
+                        str_replace_na(out$`_source.text`, replacement = " "),
+                        sep = " ") %>%
+      # Remove html tags
+      str_replace_all("<.*?>", " ")
+  }
   # out$codes <- out$`_source.codes.majorTopic` %>%
   out <- out %>%
     mutate(codes = case_when(
