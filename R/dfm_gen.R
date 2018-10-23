@@ -4,7 +4,7 @@
 #' @param out The elasticizer-generated data frame
 #' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
 #' @param text String indicating whether the "merged" field will contain the "full" text, or "lemmas"
-#' @return A Quanteda dfm 
+#' @return A Quanteda dfm
 #' @export
 #' @examples
 #' dfm_gen(out, words = '999')
@@ -32,7 +32,8 @@ dfm_gen <- function(out,words = '999', text = c("lemmas","full")) {
                         str_replace_na(out$`_source.text`, replacement = " "),
                         sep = " ") %>%
       # Remove html tags
-      str_replace_all("<.*?>", " ")
+      str_replace_all("<.*?>", " ") %>%
+      str_replace_all("\\s+"," ")
   }
   # out$codes <- out$`_source.codes.majorTopic` %>%
   out <- out %>%
