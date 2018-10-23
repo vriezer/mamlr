@@ -5,7 +5,8 @@
 \title{Generate a data frame out of unparsed Elasticsearch JSON}
 \usage{
 elasticizer(query, src = T, index = "maml",
-  es_pwd = .rs.askForPassword("Elasticsearch READ"), update = NULL)
+  es_pwd = .rs.askForPassword("Elasticsearch READ"), update = NULL,
+  ...)
 }
 \arguments{
 \item{query}{A JSON-formatted query in the Elasticsearch query DSL}

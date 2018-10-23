@@ -8,7 +8,8 @@ Depends: R (>= 3.4.4),
     jsonlite,
     parallel,
     tidyverse,
-    quanteda
+    quanteda,
+    httr
 License: Copyright Erik de Vries
 Encoding: UTF-8
 LazyData: true
