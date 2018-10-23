@@ -35,28 +35,32 @@ dfm_gen <- function(out,words = '999', text = c("lemmas","full")) {
       str_replace_all("<.*?>", " ") %>%
       str_replace_all("\\s+"," ")
   }
-  # out$codes <- out$`_source.codes.majorTopic` %>%
-  out <- out %>%
-    mutate(codes = case_when(
-      .$`_source.codes.timeSpent` == -1 ~ NA_character_,
-      TRUE ~ .$`_source.codes.majorTopic`
-    )
-    ) %>%
-    mutate(junk = case_when(
-      .$codes == 2301 ~ 1,
-      .$codes == 3101 ~ 1,
-      .$codes == 34 ~ 1,
-      .$`_source.codes.timeSpent` == -1 ~ NA_real_,
-      TRUE ~ 0
-    )
-    ) %>%
-    mutate(aggregate = .$codes %>%
-             str_pad(4, side="right", pad="a") %>%
-             str_match("([0-9]{1,2})?[0|a][1-9|a]") %>%
-             .[,2] %>%
-             as.numeric()
-    )
-  dfm <- corpus(out$merged, docnames = out$`_id`, docvars = out[,-seq(1,(length(names(out))-3),1)]) %>%
+  if ('_source.codes.majorTopic' %in% colnames(out)) {
+    out <- out %>%
+      mutate(codes = case_when(
+        .$`_source.codes.timeSpent` == -1 ~ NA_character_,
+        TRUE ~ .$`_source.codes.majorTopic`
+      )
+      ) %>%
+      mutate(junk = case_when(
+        .$codes == 2301 ~ 1,
+        .$codes == 3101 ~ 1,
+        .$codes == 34 ~ 1,
+        .$`_source.codes.timeSpent` == -1 ~ NA_real_,
+        TRUE ~ 0
+      )
+      ) %>%
+      mutate(aggregate = .$codes %>%
+               str_pad(4, side="right", pad="a") %>%
+               str_match("([0-9]{1,2})?[0|a][1-9|a]") %>%
+               .[,2] %>%
+               as.numeric()
+      )
+   vardoc <- out[,-seq(1,(length(names(out))-3),1)]
+  } else {
+    vardoc <- NULL
+  }
+  dfm <- corpus(out$merged, docnames = out$`_id`, docvars = vardoc) %>%
     dfm(tolower = T, stem = F, remove_punct = T, valuetype = "regex", ngrams = 1)
   return(dfm)
 }
