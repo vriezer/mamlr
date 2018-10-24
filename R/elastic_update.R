@@ -13,7 +13,7 @@
 #################################################################################################
 elastic_update <- function(x, es_super = 'secret') {
   bulk <- paste0(x,'\n')
-  url <- paste0('https://super:',es_super,'@linux01.uis.no/es/_bulk?pretty')
+  url <- paste0('https://super:',es_super,'@linux01.uis.no/es/_bulk?pretty&refresh=wait_for')
   res <- RETRY("POST", url = url
                , body = bulk
                , encode = "raw"
