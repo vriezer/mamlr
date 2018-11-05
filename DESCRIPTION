@@ -3,7 +3,7 @@ Title: General functions for the MaML project
 Version: 0.1
 Authors: Erik de Vries
 Description: Provide general functions in support of the MaML project, like data retrieval and parsing
-Depends: R (>= 3.4.4),
+Depends: R (>= 3.3.1),
     elastic,
     jsonlite,
     parallel,
