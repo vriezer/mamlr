@@ -4,7 +4,7 @@
 \alias{dfm_gen}
 \title{Generates dfm from ElasticSearch output}
 \usage{
-dfm_gen(out, words = "999", text = c("lemmas", "full"))
+dfm_gen(out, words = "999", text = "lemmas")
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}
