@@ -16,7 +16,7 @@ dupe_detect(row, grid, cutoff, es_pwd)
 \item{es_pwd}{Password for Elasticsearch read access}
 }
 \value{
-dupe_objects.json (containing each id and all its duplicates) and remove_ids.txt (list of ids to be removed) in current working directory
+dupe_objects.json and data frame containing each id and all its duplicates. remove_ids.txt and character vector with list of ids to be removed. Files are in current working directory
 }
 \description{
 Get ids of duplicate documents that have a cosine similarity score higher than [threshold]
