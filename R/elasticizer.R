@@ -5,6 +5,7 @@
 #' @param src Logical (true/false) indicating whether or not the source of each document should be retrieved
 #' @param index The name of the Elasticsearch index to search through
 #' @param update When set, indicates an update function to use on each batch of 1000 articles
+#' @param ... Parameters passed on to the update function
 
 #' @return A data frame containing all the search results
 #' @export

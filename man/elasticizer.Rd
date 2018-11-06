@@ -16,6 +16,8 @@ elasticizer(query, src = T, index = "maml",
 \item{index}{The name of the Elasticsearch index to search through}
 
 \item{update}{When set, indicates an update function to use on each batch of 1000 articles}
+
+\item{...}{Parameters passed on to the update function}
 }
 \value{
 A data frame containing all the search results
