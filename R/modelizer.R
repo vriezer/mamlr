@@ -163,14 +163,16 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     dfm_train <- dfm_trim(dfm_train, min_termfreq = 1, min_docfreq = 0)
     dfreq <- docfreq(dfm_train, scheme = "inverse", base = 10, smoothing = 0, k = 0, threshold = 0, use.names=T)
     dfm_train <- custom_tfidf(dfm_train, scheme_tf = "count", scheme_df = "inverse", base = 10, dfreq = dfreq)
-    words <- unlist(mclapply(unique(docvars(dfm_train, class_type)),
+    # Added unique to filter out duplicate words, these are caused when there are multiple categories, and a words scores higher
+    # than the threshold on two or more of those categories
+    words <- unique(unlist(mclapply(unique(docvars(dfm_train, class_type)),
                              feat_select,
                              dfm = dfm_train,
                              class_type = class_type,
                              percentile = params$percentiles,
                              measure = params$measures,
                              mc.cores = cores_feats
-    ))
+    )))
     dfm_train <- dfm_keep(dfm_train, words, valuetype="fixed", verbose=T)
 
 
