@@ -37,10 +37,10 @@ dfm_gen <- function(out,words = '999', text = "lemmas") {
   }
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%
-      mutate(codes = case_when(
+      mutate(codes = as.numeric(case_when(
         .$`_source.codes.timeSpent` == -1 ~ NA_character_,
         TRUE ~ .$`_source.codes.majorTopic`
-      )
+      ))
       ) %>%
       mutate(junk = case_when(
         .$codes == 2301 ~ 1,
