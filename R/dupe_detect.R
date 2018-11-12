@@ -42,7 +42,7 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd) {
   text <- capture.output(stream_out(df))
   write(text[-length(text)], file = paste0(getwd(),'/dupe_objects.json'), append=T)
   simil[upper.tri(simil)] <- NA
-  write(unique(rownames(which(simil >= cutoff, arr.ind = TRUE))),
+  write(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
         file = paste0(getwd(),'/remove_ids.txt'),
         append=T)
   return(list(df,unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)))))
