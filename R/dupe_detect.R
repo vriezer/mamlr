@@ -3,18 +3,19 @@
 #' Get ids of duplicate documents that have a cosine similarity score higher than [threshold]
 #' @param row Row of grid to parse
 #' @param grid A cross-table of all possible combinations of doctypes and dates
-#' @param cutoff Cutoff value for cosine similarity above which documents are considered duplicates
+#' @param cutoff_lower Cutoff value for minimum cosine similarity above which documents are considered duplicates (inclusive)
+#' @param cutoff_upper Cutoff value for maximum cosine similarity, above which documents are not considered duplicates (for debugging and manual parameter tuning, inclusive)
 #' @param es_pwd Password for Elasticsearch read access
 #' @return dupe_objects.json and data frame containing each id and all its duplicates. remove_ids.txt and character vector with list of ids to be removed. Files are in current working directory
 #' @export
 #' @examples
-#' dupe_detect(1,grid,es_pwd)
+#' dupe_detect(1,grid,cutoff_lower, cutoff_upper = 1, es_pwd)
 
 #################################################################################################
 #################################### Duplicate detector ################################
 #################################################################################################
 
-dupe_detect <- function(row, grid, cutoff, es_pwd) {
+dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd) {
   params <- grid[row,]
   print(paste0('Parsing ',params$doctypes,' on ',params$dates ))
   query <- paste0('{"query":
@@ -33,8 +34,7 @@ dupe_detect <- function(row, grid, cutoff, es_pwd) {
   dfm <- dfm_gen(out, text = "full")
   simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
   diag(simil) <- NA
-  simil_og <- simil
-  df <- as.data.frame(which(simil >= cutoff, arr.ind = TRUE)) %>%
+  df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)) %>%
     rownames_to_column("rowid") %>%
     mutate(colid = colnames(simil)[col]) %>%
     .[,c(1,4)] %>%
@@ -45,7 +45,7 @@ dupe_detect <- function(row, grid, cutoff, es_pwd) {
   write(unique(rownames(which(simil >= cutoff, arr.ind = TRUE))),
         file = paste0(getwd(),'/remove_ids.txt'),
         append=T)
-  return(list(df,unique(rownames(which(simil >= cutoff, arr.ind = TRUE)))))
+  return(list(df,unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)))))
   ### Dummy code to verify that filtering out unique ids using the bottom half of the matrix actually works
   # id_filter <- unique(rownames(which(simil >= cutoff, arr.ind = TRUE)))
   # dfm_nodupes <- dfm_subset(dfm, !(docnames(dfm) %in% id_filter))

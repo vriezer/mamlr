@@ -4,14 +4,16 @@
 \alias{dupe_detect}
 \title{Get ids of duplicate documents that have a cosine similarity score higher than [threshold]}
 \usage{
-dupe_detect(row, grid, cutoff, es_pwd)
+dupe_detect(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd)
 }
 \arguments{
 \item{row}{Row of grid to parse}
 
 \item{grid}{A cross-table of all possible combinations of doctypes and dates}
 
-\item{cutoff}{Cutoff value for cosine similarity above which documents are considered duplicates}
+\item{cutoff_lower}{Cutoff value for minimum cosine similarity above which documents are considered duplicates (inclusive)}
+
+\item{cutoff_upper}{Cutoff value for maximum cosine similarity, above which documents are not considered duplicates (for debugging and manual parameter tuning, inclusive)}
 
 \item{es_pwd}{Password for Elasticsearch read access}
 }
@@ -22,5 +24,5 @@ dupe_objects.json and data frame containing each id and all its duplicates. remo
 Get ids of duplicate documents that have a cosine similarity score higher than [threshold]
 }
 \examples{
-dupe_detect(1,grid,es_pwd)
+dupe_detect(1,grid,cutoff_lower, cutoff_upper = 1, es_pwd)
 }
