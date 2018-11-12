@@ -5,23 +5,35 @@
 #' @param src Logical (true/false) indicating whether or not the source of each document should be retrieved
 #' @param index The name of the Elasticsearch index to search through
 #' @param update When set, indicates an update function to use on each batch of 1000 articles
+#' @param local Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)
 #' @param ... Parameters passed on to the update function
 
 #' @return A data frame containing all the search results
 #' @export
 #' @examples
-#' elasticizer(query, src = TRUE, index = "maml")
+#' elasticizer(query, src = TRUE, index = "maml", update = NULL, local = F)
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), update = NULL, ...){
-  connect(es_port = 443,
-          es_transport = 'https',
-          es_host = 'linux01.uis.no',
-          es_path = 'es',
-          es_user = 'es',
-          es_pwd = es_pwd,
-          errors = 'complete')
+elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), update = NULL, local = F, ...){
+  if (local == F) {
+    connect(es_port = 443,
+            es_transport = 'https',
+            es_host = 'linux01.uis.no',
+            es_path = 'es',
+            es_user = 'es',
+            es_pwd = es_pwd,
+            errors = 'complete')
+  }
+  if (local == T){
+    connect(es_port = 9200,
+            es_transport = 'http',
+            es_host = 'localhost',
+            es_path = '',
+            es_user = '',
+            es_pwd = '',
+            errors = 'complete')
+  }
   # Get all results - one approach is to use a while loop
   if (src == T) {
     res <- Search(index = index, time_scroll="5m",body = query, size = 1000, raw=T)

@@ -4,12 +4,14 @@
 \alias{elastic_update}
 \title{Push a line-delimited JSON string to Elasticsearch as bulk update}
 \usage{
-elastic_update(x, es_super = "secret")
+elastic_update(x, es_super = "secret", local = F)
 }
 \arguments{
 \item{x}{Line-delimited JSON suitable for use as Elasticsearch bulk update}
 
 \item{es_super}{The even-more-secret (do not store this anywhere!!!) password for updating (or messing up!) the entire database}
+
+\item{local}{Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)}
 }
 \value{
 An html response object indicating the status of the update
@@ -18,5 +20,5 @@ An html response object indicating the status of the update
 Push a line-delimited JSON string to Elasticsearch as bulk update
 }
 \examples{
-elastic_update(x, es_super = 'secret')
+elastic_update(x, es_super = 'secret', local = F)
 }

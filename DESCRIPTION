@@ -11,7 +11,8 @@ Depends: R (>= 3.3.1),
     quanteda,
     httr,
     caret,
-    e1071
+    e1071,
+    udpipe
 License: Copyright Erik de Vries
 Encoding: UTF-8
 LazyData: true
