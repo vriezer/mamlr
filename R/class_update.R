@@ -21,8 +21,8 @@ class_update <- function(out, localhost = T, model_final, dfm_words, varname, es
   pred <- data.frame(id = out$`_id`, pred = predict(model_final, newdata = dfm))
   bulk <- apply(pred, 1, bulk_writer, varname = varname, type = 'set')
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
-  stop_for_status(res)
-  appData <- content(res)
+  httr:::stop_for_status(res)
+  appData <- httr:::content(res)
   if (appData$errors == T){
     print(appData)
     stop("Aborting, errors found during updating")
