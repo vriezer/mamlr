@@ -4,10 +4,13 @@
 \alias{class_update}
 \title{Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information}
 \usage{
-class_update(out, model_final, dfm_words, varname, es_super)
+class_update(out, localhost = T, model_final, dfm_words, varname,
+  es_super)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
+
+\item{localhost}{Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)}
 
 \item{model_final}{The classification model (e.g. output from textstat_nb(), svm() or others)}
 
@@ -24,5 +27,5 @@ As this is a nested function used within elasticizer, there is no return output
 Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information
 }
 \examples{
-elasticizer(query, src = T, es_pwd = es_pwd, update = class_update, model_final = model_final, dfm_words = dfm_words, varname = computerCodes.varname, es_super = es_super)
+class_update(out, localhost = T, model_final, dfm_words, varname, es_super)
 }

@@ -11,12 +11,13 @@
 #' @return A data frame containing all the search results
 #' @export
 #' @examples
-#' elasticizer(query, src = TRUE, index = "maml", update = NULL, local = F)
+#' elasticizer(query, src = TRUE, index = "maml", update = NULL, localhost = F)
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), update = NULL, local = F, ...){
-  if (local == F) {
+elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), update = NULL, localhost = F, ...){
+  httr::set_config(httr::config(http_version = 0))
+  if (localhost == F) {
     connect(es_port = 443,
             es_transport = 'https',
             es_host = 'linux01.uis.no',
@@ -25,7 +26,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
             es_pwd = es_pwd,
             errors = 'complete')
   }
-  if (local == T){
+  if (localhost == T){
     connect(es_port = 9200,
             es_transport = 'http',
             es_host = 'localhost',
@@ -51,7 +52,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
     batch <- 1
     print(paste0('Processing documents ',batch*1000-1000,' through ',batch*1000,' out of ',total,' documents.'))
     if (length(update) > 0){
-      update(out, ...)
+      update(out, localhost = localhost, ...)
     }
     while(hits != 0){
       res <- scroll(json$`_scroll_id`, time_scroll="5m", raw=T)
@@ -62,7 +63,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
         print(paste0('Processing documents ',batch*1000-1000,' through ',batch*1000,' out of ',total,' documents.'))
         if (length(update) > 0){
           out <-  jsonlite:::flatten(json$hits$hits)
-          update(out, ...)
+          update(out, localhost = localhost, ...)
         } else {
           out <- bind_rows(out, jsonlite:::flatten(json$hits$hits))
         }

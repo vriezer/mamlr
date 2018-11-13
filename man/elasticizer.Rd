@@ -6,7 +6,7 @@
 \usage{
 elasticizer(query, src = T, index = "maml",
   es_pwd = .rs.askForPassword("Elasticsearch READ"), update = NULL,
-  local = F, ...)
+  localhost = F, ...)
 }
 \arguments{
 \item{query}{A JSON-formatted query in the Elasticsearch query DSL}
@@ -17,9 +17,9 @@ elasticizer(query, src = T, index = "maml",
 
 \item{update}{When set, indicates an update function to use on each batch of 1000 articles}
 
-\item{local}{Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)}
-
 \item{...}{Parameters passed on to the update function}
+
+\item{local}{Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)}
 }
 \value{
 A data frame containing all the search results
@@ -28,5 +28,5 @@ A data frame containing all the search results
 Generate a data frame out of unparsed Elasticsearch JSON
 }
 \examples{
-elasticizer(query, src = TRUE, index = "maml", update = NULL, local = F)
+elasticizer(query, src = TRUE, index = "maml", update = NULL, localhost = F)
 }
