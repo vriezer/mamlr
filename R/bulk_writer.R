@@ -20,6 +20,7 @@ bulk_writer <- function(x, index = 'maml', varname = 'updated_variable', type) {
   if (length(x) > 2) {
     json <- toJSON(bind_rows(x[-1]), collapse = T)
   } else {
+    names(x) <- NULL
     json <- toJSON(x[-1], collapse = T)
   }
   if (type == 'set') {
