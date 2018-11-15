@@ -12,7 +12,7 @@
 #################################### Reconstructing documents from lemmas########################
 #################################################################################################
 ## Only merging lemmas for now, feature selection has no impact on junk classification
-merger <- function(row, words = '999', out = out) {
+merger <- function(row, out = out) {
   df <- out[row,]
   # Mergin lemmas into single string
   lemmas <- paste(str_split(df$`_source.tokens.lemmas`, "\\|")[[1]],collapse = ' ')
@@ -22,7 +22,5 @@ merger <- function(row, words = '999', out = out) {
     str_replace_all("\\S*?[0-9@#]+(\\S*?)([:;.,?!\\s])+?", "\\2") %>%
     # Adding extra . at end of string to allow for strings that contain less than 150 words and do not end on ". "
     paste0(.,". ")
-  if (words != "999") {
-    lemmas <- str_extract(lemmas, str_c("^(([\\s\\S]*? ){0,",words,"}[\\s\\S]*?[.!?])\\s+?"))}
   return(lemmas)
 }

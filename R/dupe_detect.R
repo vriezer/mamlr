@@ -6,16 +6,17 @@
 #' @param cutoff_lower Cutoff value for minimum cosine similarity above which documents are considered duplicates (inclusive)
 #' @param cutoff_upper Cutoff value for maximum cosine similarity, above which documents are not considered duplicates (for debugging and manual parameter tuning, inclusive)
 #' @param es_pwd Password for Elasticsearch read access
+#' @param words Document cutoff point in number of words. Documents are cut off at the last [.?!] before the cutoff (so document will be a little shorter than [words])
 #' @return dupe_objects.json and data frame containing each id and all its duplicates. remove_ids.txt and character vector with list of ids to be removed. Files are in current working directory
 #' @export
 #' @examples
-#' dupe_detect(1,grid,cutoff_lower, cutoff_upper = 1, es_pwd)
+#' dupe_detect(1,grid,cutoff_lower, cutoff_upper = 1, es_pwd, words)
 
 #################################################################################################
 #################################### Duplicate detector ################################
 #################################################################################################
 
-dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd) {
+dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, words) {
   params <- grid[row,]
   print(paste0('Parsing ',params$doctypes,' on ',params$dates ))
   query <- paste0('{"query":
@@ -31,7 +32,7 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd) {
 
 
   out <- elasticizer(query, es_pwd = es_pwd)
-  dfm <- dfm_gen(out, text = "full")
+  dfm <- dfm_gen(out, text = "full", words = words)
   simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
   diag(simil) <- NA
   df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)) %>%
