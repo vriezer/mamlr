@@ -4,14 +4,14 @@
 \alias{merger}
 \title{Merges list of lemmas back into a pseudo-document}
 \usage{
-merger(row, words = "999", out = out)
+merger(row, out = out)
 }
 \arguments{
 \item{row}{A row number form the Elasticizer-generated data frame}
 
-\item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
-
 \item{out}{The elasticizer-generated data frame}
+
+\item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
 }
 \value{
 A documentified string of lemmas, one document at a time
