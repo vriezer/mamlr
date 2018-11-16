@@ -35,18 +35,12 @@ dfm_gen <- function(out, words = '999', text = "lemmas") {
       str_replace_all("<.*?>", " ") %>%
       str_replace_all("\\s+"," ")
   }
-  if (words != "999") {
-    ### Former word count regex, includes words up until the next sentence boundary, instead of cutting to the last sentence boundary
-    # out$merged2 <- str_extract(lemmas, str_c("^(([\\s\\S]*? ){0,",words,"}[\\s\\S]*?[.!?])\\s+?"))
-    out <- out %>% rowwise() %>% mutate(merged = paste0(str_split(merged, '\\s')[[1]][1:words], collapse = ' ') %>%
-      str_extract('.*[.?!]'))
-  }
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%
-      mutate(codes = as.numeric(case_when(
+      mutate(codes = case_when(
         .$`_source.codes.timeSpent` == -1 ~ NA_character_,
         TRUE ~ .$`_source.codes.majorTopic`
-      ))
+      )
       ) %>%
       mutate(junk = case_when(
         .$codes == 2301 ~ 1,
@@ -65,6 +59,12 @@ dfm_gen <- function(out, words = '999', text = "lemmas") {
    vardoc <- out[,-seq(1,(length(names(out))-3),1)]
   } else {
     vardoc <- NULL
+  }
+  if (words != "999") {
+    ### Former word count regex, includes words up until the next sentence boundary, instead of cutting to the last sentence boundary
+    # out$merged2 <- str_extract(lemmas, str_c("^(([\\s\\S]*? ){0,",words,"}[\\s\\S]*?[.!?])\\s+?"))
+    out <- out %>% rowwise() %>% mutate(merged = paste0(str_split(merged, '\\s')[[1]][1:words], collapse = ' ') %>%
+                                          str_extract('.*[.?!]'))
   }
   dfm <- corpus(out$merged, docnames = out$`_id`, docvars = vardoc) %>%
     dfm(tolower = T, stem = F, remove_punct = T, valuetype = "regex", ngrams = 1)
