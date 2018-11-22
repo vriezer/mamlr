@@ -35,18 +35,24 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, words
   dfm <- dfm_gen(out, text = "full", words = words)
   simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
   diag(simil) <- NA
-  df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)) %>%
-    rownames_to_column("rowid") %>%
-    mutate(colid = colnames(simil)[col]) %>%
-    .[,c(1,4)] %>%
-    group_by(colid) %>% summarise(rowid=list(rowid))
-  text <- capture.output(stream_out(df))
-  write(text[-length(text)], file = paste0(getwd(),'/dupe_objects.json'), append=T)
-  simil[upper.tri(simil)] <- NA
-  write(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
-        file = paste0(getwd(),'/remove_ids.txt'),
-        append=T)
-  return(list(df,unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)))))
+  df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))
+
+  if (length(rownames(df)) > 0) {
+    df <- df %>%
+      rownames_to_column("rowid") %>%
+      mutate(colid = colnames(simil)[col]) %>%
+      .[,c(1,4)] %>%
+      group_by(colid) %>% summarise(rowid=list(rowid))
+    text <- capture.output(stream_out(df))
+    write(text[-length(text)], file = paste0(getwd(),'/dupe_objects.json'), append=T)
+    simil[upper.tri(simil)] <- NA
+    write(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
+          file = paste0(getwd(),'/remove_ids.txt'),
+          append=T)
+    return(list(df,unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)))))
+  } else {
+    return(NULL)
+  }
   ### Dummy code to verify that filtering out unique ids using the bottom half of the matrix actually works
   # id_filter <- unique(rownames(which(simil >= cutoff, arr.ind = TRUE)))
   # dfm_nodupes <- dfm_subset(dfm, !(docnames(dfm) %in% id_filter))
