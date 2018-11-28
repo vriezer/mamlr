@@ -32,13 +32,11 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, words
 
 
   out <- elasticizer(query, es_pwd = es_pwd)
-  dfm <- dfm_gen(out, text = "full", words = words)
-  simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
-  diag(simil) <- NA
-  df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))
-
-  if (length(rownames(df)) > 0) {
-    df <- df %>%
+  if (out$hits$total > 0) {
+    dfm <- dfm_gen(out, text = "full", words = words)
+    simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
+    diag(simil) <- NA
+    df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)) %>%
       rownames_to_column("rowid") %>%
       mutate(colid = colnames(simil)[col]) %>%
       .[,c(1,4)] %>%
