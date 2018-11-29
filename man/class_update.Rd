@@ -5,7 +5,7 @@
 \title{Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information}
 \usage{
 class_update(out, localhost = T, model_final, dfm_words, varname,
-  es_super)
+  es_super = .rs.askForPassword("ElasticSearch WRITE"))
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
@@ -27,5 +27,5 @@ As this is a nested function used within elasticizer, there is no return output
 Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information
 }
 \examples{
-class_update(out, localhost = T, model_final, dfm_words, varname, es_super)
+class_update(out, localhost = T, model_final, dfm_words, varname, es_super = .rs.askForPassword('ElasticSearch WRITE'))
 }

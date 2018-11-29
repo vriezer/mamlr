@@ -10,22 +10,15 @@
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
 #' @examples
-#' class_update(out, localhost = T, model_final, dfm_words, varname, es_super)
+#' class_update(out, localhost = T, model_final, dfm_words, varname, es_super = .rs.askForPassword('ElasticSearch WRITE'))
 #################################################################################################
 #################################### Update any kind of classification ##########################
 #################################################################################################
-class_update <- function(out, localhost = T, model_final, dfm_words, varname, es_super) {
+class_update <- function(out, localhost = T, model_final, dfm_words, varname, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
   print('updating')
   dfm <- dfm_gen(out, text = 'lemmas') %>%
     dfm_keep(dfm_words, valuetype="fixed", verbose=T)
   pred <- data.frame(id = out$`_id`, pred = predict(model_final, newdata = dfm))
   bulk <- apply(pred, 1, bulk_writer, varname = varname, type = 'set')
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
-  httr:::stop_for_status(res)
-  appData <- httr:::content(res)
-  if (appData$errors == T){
-    print(appData)
-    stop("Aborting, errors found during updating")
-  }
-  print("updated")
 }

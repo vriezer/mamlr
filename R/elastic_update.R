@@ -27,5 +27,12 @@ elastic_update <- function(x, es_super = 'secret', localhost = T) {
                , times = 10
                , pause_min = 10
   )
-  return(res)
+  httr:::stop_for_status(res)
+  appData <- httr:::content(res)
+  if (appData$errors == T){
+    print(appData)
+    stop("Aborting, errors found during updating")
+  }
+  print("updated")
+  return(1)
 }

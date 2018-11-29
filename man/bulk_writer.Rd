@@ -11,7 +11,7 @@ bulk_writer(x, index = "maml", varname = "updated_variable", type)
 
 \item{index}{The name of the Elasticsearch index to update}
 
-\item{varname}{String indicating the parent variable that should be updated (when it does not exist, it will be created, all varnames arexed by computerCodes)}
+\item{varname}{String indicating the parent variable that should be updated (when it does not exist, it will be created, all varnames are prefixed by computerCodes)}
 
 \item{type}{Type of updating to be done, can be either 'set', 'add', or 'addnested'}
 }
@@ -23,6 +23,7 @@ Generate a line-delimited JSON string for use in Elasticsearch bulk updates
 Type can be either one of three values:
 set: set the value of [varname] to x
 add: add x to the values of [varname]
+varname: When using tokens, the token field will be updated instead of a computerCodes field
 }
 \examples{
 bulk_writer(x, index = 'maml', varname = 'updated_variable')
