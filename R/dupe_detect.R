@@ -30,30 +30,34 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_su
                   }}]
 
                   } } }')
-  out <- elasticizer(query, es_pwd = es_pwd, localhost=T)
+  out <- elasticizer(query, es_pwd = es_pwd, localhost= localhost)
   if (class(out$hits$hits) != 'list') {
     dfm <- dfm_gen(out, text = "full", words = words)
-    simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
-    diag(simil) <- NA
-    df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)) %>%
-      rownames_to_column("rowid") %>%
-      mutate(colid = colnames(simil)[col]) %>%
-      .[,c(1,4)] %>%
-      group_by(colid) %>% summarise(rowid=list(rowid))
-    text <- capture.output(stream_out(df))
-    # write(text[-length(text)], file = paste0(getwd(),'/dupe_objects.json'), append=T)
-    simil[upper.tri(simil)] <- NA
-    # write(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
-    #       file = paste0(getwd(),'/remove_ids.txt'),
-    #       append=T)
-    dupe_delete <- data.frame(id=unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
-                              dupe_delete = rep(1,length(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))))))
-    bulk <- c(apply(df, 1, bulk_writer, varname='duplicates', type = 'set'),
-              apply(dupe_delete, 1, bulk_writer, varname='_delete', type = 'set'))
-    if (length(bulk) > 0) {
-      res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
+    if (sum(dfm[1,]) > 0) {
+      simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
+      diag(simil) <- NA
+      df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)) %>%
+        rownames_to_column("rowid") %>%
+        mutate(colid = colnames(simil)[col]) %>%
+        .[,c(1,4)] %>%
+        group_by(colid) %>% summarise(rowid=list(rowid))
+      text <- capture.output(stream_out(df))
+      # write(text[-length(text)], file = paste0(getwd(),'/dupe_objects.json'), append=T)
+      simil[upper.tri(simil)] <- NA
+      # write(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
+      #       file = paste0(getwd(),'/remove_ids.txt'),
+      #       append=T)
+      dupe_delete <- data.frame(id=unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
+                                dupe_delete = rep(1,length(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))))))
+      bulk <- c(apply(df, 1, bulk_writer, varname='duplicates', type = 'set'),
+                apply(dupe_delete, 1, bulk_writer, varname='_delete', type = 'set'))
+      if (length(bulk) > 0) {
+        res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
+      }
+      return(paste0('Checked ',params$doctypes,' on ',params$dates ))
+    } else {
+      return(paste0('No results for ',params$doctypes,' on ',params$dates ))
     }
-    return(paste0('Checked ',params$doctypes,' on ',params$dates ))
   } else {
     return(paste0('No results for ',params$doctypes,' on ',params$dates ))
   }

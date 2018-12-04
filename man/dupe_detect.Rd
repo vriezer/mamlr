@@ -4,7 +4,8 @@
 \alias{dupe_detect}
 \title{Get ids of duplicate documents that have a cosine similarity score higher than [threshold]}
 \usage{
-dupe_detect(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, words)
+dupe_detect(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_super,
+  words, localhost = T)
 }
 \arguments{
 \item{row}{Row of grid to parse}
@@ -17,7 +18,11 @@ dupe_detect(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, words)
 
 \item{es_pwd}{Password for Elasticsearch read access}
 
+\item{es_super}{Password for write access to ElasticSearch}
+
 \item{words}{Document cutoff point in number of words. Documents are cut off at the last [.?!] before the cutoff (so document will be a little shorter than [words])}
+
+\item{localhost}{Defaults to true. When true, connect to a local Elasticsearch instance on the default port (9200)}
 }
 \value{
 dupe_objects.json and data frame containing each id and all its duplicates. remove_ids.txt and character vector with list of ids to be removed. Files are in current working directory
@@ -26,5 +31,5 @@ dupe_objects.json and data frame containing each id and all its duplicates. remo
 Get ids of duplicate documents that have a cosine similarity score higher than [threshold]
 }
 \examples{
-dupe_detect(1,grid,cutoff_lower, cutoff_upper = 1, es_pwd, words)
+dupe_detect(1,grid,cutoff_lower, cutoff_upper = 1, es_pwd, es_super, words, localhost = T)
 }
