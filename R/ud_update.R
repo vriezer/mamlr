@@ -25,20 +25,20 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%
       group_by(doc_id) %>%
       summarise(
-        paragraph_id = list(list(paragraph_id)),
-        sentence_id = list(list(sentence_id)),
-        token_id = list(list(as.numeric(token_id))),
-        lemma = list(list(lemma)),
-        upos = list(list(upos)),
-        feats = list(list(feats)),
-        head_token_id = list(list(as.numeric(head_token_id))),
-        dep_rel = list(list(dep_rel)),
+        paragraph_id = list(list(as.integer(paragraph_id))),
+        sentence_id = list(list(as.integer(sentence_id))),
+        token_id = list(list(as.integer(token_id))),
+        lemma = list(list(as.character(lemma))),
+        upos = list(list(as.character(upos))),
+        feats = list(list(as.character(feats))),
+        head_token_id = list(list(as.integer(head_token_id))),
+        dep_rel = list(list(as.character(dep_rel))),
         exists = list(list(TRUE))
      )
     return(ud)
   }
   ud <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_proc, out = out, udmodel=udmodel, mc.cores = cores))
-  bulk <- apply(ud, 1, bulk_writer, varname = 'tokens', type = 'set')
+  bulk <- apply(ud, 1, bulk_writer, varname = 'ud', type = 'set')
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
   return(res)
 }
