@@ -12,7 +12,8 @@ Depends: R (>= 3.3.1),
     httr,
     caret,
     e1071,
-    udpipe
+    udpipe,
+    parallel
 License: Copyright Erik de Vries
 Encoding: UTF-8
 LazyData: true
