@@ -73,7 +73,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
                          mc.cores = cores_inner
       )
       )
-    print(res)
+    print(res[1,1])
     return(cbind(as.data.frame(t(colMeans(select(res, 1:`Balanced Accuracy`)))),params))
   }
 
