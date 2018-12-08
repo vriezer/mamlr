@@ -158,11 +158,16 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
       final <- T ### Indicate final modeling run on whole dataset
       dfm_train <- dfm
     }
+    if (model == 'nb') {
+      scheme_tf <- 'count' # The 'old' way
+    } else {
+      scheme_tf <- 'prop' # The 'new' way
+    }
     ### Getting features from training dataset
     # Getting idf from training data, and using it to normalize both training and testing feature occurence
     dfm_train <- dfm_trim(dfm_train, min_termfreq = 1, min_docfreq = 0)
     dfreq <- docfreq(dfm_train, scheme = "inverse", base = 10, smoothing = 0, k = 0, threshold = 0, use.names=T)
-    dfm_train <- custom_tfidf(dfm_train, scheme_tf = "prop", scheme_df = "inverse", base = 10, dfreq = dfreq) #scheme_tf was 'count'
+    dfm_train <- custom_tfidf(dfm_train, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq)
     # Added unique to filter out duplicate words, these are caused when there are multiple categories, and a words scores higher
     # than the threshold on two or more of those categories
     words <- unique(unlist(mclapply(unique(docvars(dfm_train, class_type)),
@@ -184,34 +189,32 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     }
     if (model == 'nnet') {
       idC <- class.ind(as.factor(docvars(dfm_train, class_type)))
-      text_model <- nnet(dfm_train, idC, decay = params$decay, size=params$size, maxit=params$maxit, softmax=T, reltol = params$reltol, MaxNWts = length(dfm_train@Dimnames$features)*params$size + 1000)
+      text_model <- nnet(dfm_train, idC, decay = params$decay, size=params$size, maxit=params$maxit, softmax=T, reltol = params$reltol, MaxNWts = params$size*(length(dfm_train@Dimnames$features)+1)+(params$size*2)+2)
     }
-    if (model == 'neuralnet') {
-      dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
-      dfm_test <- custom_tfidf(dfm_test, scheme_tf = "count", scheme_df = "inverse", base = 10, dfreq = dfreq[words])
-
-      idC <- class.ind(as.factor(docvars(dfm_train, class_type)))
-      colnames(idC) <- NULL
-      dfm_train <- cbind(idC, dfm_train)
-      n <- colnames(dfm_train)[3:length(colnames(dfm_train))]
-      f <- as.formula(paste0("feat1 + feat2 ~ `", paste0(n, collapse = "` + `"),"`"))
-      idC_out <- class.ind(as.factor(docvars(dfm_test, class_type)))
-      colnames(idC_out) <- NULL
-      dfm_test <- cbind(idC_out, dfm_test)
-      dfm_train <- dfm_weight(dfm_train, scheme = 'prop')
-      dfm_test <- dfm_weight(dfm_test, scheme = 'prop')
-      nn <- neuralnet(f,data=dfm_train,hidden=1,linear.output=F,lifesign = 'minimal')
-      pr.nn <- compute(nn,dfm_test[,3:length(colnames(dfm_test))])
-      class_table <- table(prediction = as.matrix(round(pr.nn$net.result[,2])), trueValues = as.matrix(idC_out[,2]))
-      conf_mat <- confusionMatrix(class_table, mode = "everything")
-    }
+    # if (model == 'neuralnet') {
+    #   dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
+    #   dfm_test <- custom_tfidf(dfm_test, scheme_tf = "prop", scheme_df = "inverse", base = 10, dfreq = dfreq[words])
+    #
+    #   idC <- class.ind(as.factor(docvars(dfm_train, class_type)))
+    #   colnames(idC) <- NULL
+    #   nn_train <- cbind(idC, dfm_train)
+    #   n <- colnames(nn_train)[3:length(colnames(nn_train))]
+    #   f <- as.formula(paste0("feat1 + feat2 ~ `", paste0(n, collapse = "` + `"),"`"))
+    #   idC_out <- class.ind(as.factor(docvars(dfm_test, class_type)))
+    #   colnames(idC_out) <- NULL
+    #   nn_test <- cbind(idC_out, dfm_test)
+    #   nn <- neuralnet(f,data=nn_train,hidden=3,linear.output=F,act.fct = 'logistic',lifesign = 'full', threshold = .005)
+    #   pr.nn <- compute(nn,nn_test[,3:length(colnames(nn_test))])
+    #   class_table <- table(prediction = as.matrix(round(pr.nn$net.result[,2])), trueValues = as.matrix(idC_out[,2]))
+    #   nn_conf_mat <- confusionMatrix(class_table, mode = "everything")
+    # }
     ### Add more if statements for different models
     if (exists("final") == T) {
       return(text_model)
     } else {
       ### Removing all features not in training set from test set and weighting the remaining features according to training idf
       dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
-      dfm_test <- custom_tfidf(dfm_test, scheme_tf = "prop", scheme_df = "inverse", base = 10, dfreq = dfreq[words])
+      dfm_test <- custom_tfidf(dfm_test, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq[words])
       pred <- predict(text_model, newdata = dfm_test, type = 'class')
       class_table <- table(prediction = pred, trueValues = docvars(dfm_test, class_type))
       conf_mat <- confusionMatrix(class_table, mode = "everything")
