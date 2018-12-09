@@ -73,9 +73,9 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
                          mc.cores = cores_inner
       )
       )
-    print(res)
-    print(res[1,1])
-    print('inner_cv')
+    # print(res)
+    # print(res[1,1])
+    # print('inner_cv')
     return(cbind(as.data.frame(t(colMeans(select(res, 1:`Balanced Accuracy`)))),params))
   }
 
@@ -98,9 +98,9 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
                                 cores_inner = cores_inner,
                                 mc.cores = cores_grid)
       )
-      print(res)
-      print(res[1,1])
-      print('outer_cv')
+      # print(res)
+      # print(res[1,1])
+      # print('outer_cv')
       # Determine optimum hyperparameters within outer fold training set
       optimum <- res[which.max(res[,opt_measure]),] %>%
         select(percentiles: ncol(.))
@@ -122,9 +122,9 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
                                 cores_inner = cores_inner,
                                 mc.cores = cores_grid)
       )
-      print(res)
-      print(res[1,1])
-      print('line 126, final model parameter optimization')
+      # print(res)
+      # print(res[1,1])
+      # print('line 126, final model parameter optimization')
       return(res)
     }
   }
@@ -224,6 +224,16 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
       dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
       dfm_test <- custom_tfidf(dfm_test, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq[words])
       pred <- predict(text_model, newdata = dfm_test, type = 'class')
+
+      ### Fix for single-class 'predictions' in borderline situations
+      if (length(unique(pred)) == 1 & class_type == 'junk') {
+        if (unique(pred) == '0') {
+          pred[1] <- '1'
+        } else {
+          pred[1] <- '0'
+        }
+      }
+
       class_table <- table(prediction = pred, trueValues = docvars(dfm_test, class_type))
       conf_mat <- confusionMatrix(class_table, mode = "everything")
       if (is.matrix(conf_mat$byClass) == T) {
