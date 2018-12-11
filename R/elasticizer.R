@@ -64,6 +64,9 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
         if (length(update) > 0){
           out <-  jsonlite:::flatten(json$hits$hits)
           update(out, localhost = localhost, ...)
+          if (batch%%200 == 0) {
+            Sys.sleep(900)
+          }
         } else {
           out <- bind_rows(out, jsonlite:::flatten(json$hits$hits))
         }
