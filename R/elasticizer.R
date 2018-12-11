@@ -37,10 +37,10 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
   }
   # Get all results - one approach is to use a while loop
   if (src == T) {
-    res <- Search(index = index, time_scroll="5m",body = query, size = 1000, raw=T)
+    res <- Search(index = index, time_scroll="20m",body = query, size = 1000, raw=T)
   }
   if (src == F) {
-    res <- Search(index = index, time_scroll="5m",body = query, size = 1000, raw=T, source = F)
+    res <- Search(index = index, time_scroll="20m",body = query, size = 1000, raw=T, source = F)
   }
   json <- fromJSON(res)
   if (json$hits$total == 0) {
@@ -55,7 +55,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       update(out, localhost = localhost, ...)
     }
     while(hits != 0){
-      res <- scroll(json$`_scroll_id`, time_scroll="5m", raw=T)
+      res <- scroll(json$`_scroll_id`, time_scroll="20m", raw=T)
       json <- fromJSON(res)
       hits <- length(json$hits$hits)
       if(hits > 0) {
