@@ -23,7 +23,7 @@ Generate a line-delimited JSON string for use in Elasticsearch bulk updates
 Type can be either one of three values:
 set: set the value of [varname] to x
 add: add x to the values of [varname]
-varname: When using tokens, the token field will be updated instead of a computerCodes field
+varname: When using ud, the ud field will be updated instead of a computerCodes field
 }
 \examples{
 bulk_writer(x, index = 'maml', varname = 'updated_variable')

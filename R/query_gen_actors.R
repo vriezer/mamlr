@@ -3,6 +3,7 @@
 #' Generate actor search queries based on data in actor db
 #' @param actor A row from the output of elasticizer() when run on the 'actor' index
 #' @param country 2-letter string indicating the country for which to generate the queries, is related to inflected nouns, definitive forms and genitive forms of names etc.
+#' @param identifier Identifier used to mark hits in the text, identifiers are prepended before the actual hit
 #' @return A data frame containing the queries, related actor ids and actor function
 #' @export
 #' @examples
@@ -11,7 +12,7 @@
 #################################################################################################
 #################################### Actor search query generator ###############################
 #################################################################################################
-query_gen_actors <- function(actor, country) {
+query_gen_actors <- function(actor, country, identifier) {
   highlight <- paste0('"highlight" : {
                       "fields" : {
                       "text" : {},
@@ -31,6 +32,10 @@ if (country == "no") {
   genitive <- 's'
   definitive <- 'en'
   definitive_genitive <- 'ens'
+} else if (country == 'uk') {
+  genitive <- '\'s'
+  definitive <- 's'
+  definitive_genitive <- ''
 } else {
   genitive <- ''
   definitive <- ''
@@ -67,6 +72,82 @@ if (country == "no") {
     names <- paste(c(capital,capital_gen,gen,capital_def,def,defgen,capital_defgen), collapse = ' ')
     query_string <- paste0(query_string,') OR (',lastname,' AND (',names,')))')
     ids <- toJSON(unlist(lapply(c(actor$`_source.actorId`,actor$`_source.ministryId`,actor$`_source.partyId`),str_c, "_min")))
+  }
+  if (actor$`_source.function` == "Institution") {
+    #uppercasing
+    firstup <- function(x) {
+      substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+      x
+    }
+    actor$`_source.startDate` <- "2000-01-01"
+    actor$`_source.endDate` <- "2099-01-01"
+    if (nchar(actor$`_source.institutionNameSearch`[[1]]) > 0) {
+      upper <- unlist(lapply(actor$`_source.institutionNameSearch`, firstup))
+      upper <- c(upper, unlist(lapply(upper, str_c, genitive)),
+                 unlist(lapply(upper, str_c, definitive)),
+                 unlist(lapply(upper, str_c, definitive_genitive)))
+      capital <- unlist(lapply(actor$`_source.institutionNameSearch`, str_to_title))
+      capital <- c(capital, unlist(lapply(capital, str_c, genitive)),
+                 unlist(lapply(capital, str_c, definitive)),
+                 unlist(lapply(capital, str_c, definitive_genitive)))
+      base <- actor$`_source.institutionNameSearch`
+      base <- c(base, unlist(lapply(base, str_c, genitive)),
+                   unlist(lapply(base, str_c, definitive)),
+                   unlist(lapply(base, str_c, definitive_genitive)))
+      names <- paste(unique(c(upper,capital,base)), collapse = '\\" \\"')
+      query_string <- paste0('(\\"',names,'\\")')
+      ids <- toJSON(unlist(lapply(c(actor$`_source.institutionId`),str_c, "_f")))
+      query <- paste0('{"query":
+                    {"bool": {"filter":[{"term":{"country":"',country,'"}},
+                    {"range":{"publication_date":{"gte":"',actor$`_source.startDate`,'","lte":"',actor$`_source.endDate`,'"}}},
+                    {"query_string" : {
+                    "default_operator" : "OR",
+                    "allow_leading_wildcard" : "false",
+                    "fields": ["text","teaser","preteaser","title","subtitle"],
+                    "query" : "', query_string,'"
+                    }
+                    }
+                    ]
+                    } },',highlight,' }')
+      df1 <- data.frame(query = query, ids = I(ids), type = actor$`_source.function`, stringsAsFactors = F)
+    }
+    if (nchar(actor$`_source.institutionNameSearchShort`[[1]]) > 0) {
+      upper <- unlist(lapply(actor$`_source.institutionNameSearchShort`, firstup))
+      upper <- c(upper, unlist(lapply(upper, str_c, genitive)),
+                 unlist(lapply(upper, str_c, definitive)),
+                 unlist(lapply(upper, str_c, definitive_genitive)))
+      capital <- unlist(lapply(actor$`_source.institutionNameSearchShort`, str_to_title))
+      capital <- c(capital, unlist(lapply(capital, str_c, genitive)),
+                   unlist(lapply(capital, str_c, definitive)),
+                   unlist(lapply(capital, str_c, definitive_genitive)))
+      base <- actor$`_source.institutionNameSearchShort`
+      base <- c(base, unlist(lapply(base, str_c, genitive)),
+                unlist(lapply(base, str_c, definitive)),
+                unlist(lapply(base, str_c, definitive_genitive)))
+      names <- paste(unique(c(upper,capital,base)), collapse = '\\" \\"')
+      query_string <- paste0('(\\"',names,'\\")')
+      ids <- toJSON(unlist(lapply(c(actor$`_source.institutionId`),str_c, "_s")))
+      query <- paste0('{"query":
+                    {"bool": {"filter":[{"term":{"country":"',country,'"}},
+                    {"range":{"publication_date":{"gte":"',actor$`_source.startDate`,'","lte":"',actor$`_source.endDate`,'"}}},
+                    {"query_string" : {
+                    "default_operator" : "OR",
+                    "allow_leading_wildcard" : "false",
+                    "fields": ["text","teaser","preteaser","title","subtitle"],
+                    "query" : "', query_string,'"
+                    }
+                    }
+                    ]
+                    } },',highlight,' }')
+      df2 <- data.frame(query = query, ids = I(ids), type = actor$`_source.function`, stringsAsFactors = F)
+    }
+    if (exists('df1') == T & exists('df2') == T) {
+      return(bind_rows(df1,df2))
+    } else if (exists('df1') == T) {
+      return(df1)
+    } else if (exists('df2') == T) {
+      return(df2)
+    }
   }
   if (actor$`_source.function` == "Party") {
     actor$`_source.startDate` <- "2000-01-01"
