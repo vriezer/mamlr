@@ -22,6 +22,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
   }
 
   sentencizer <- function(row, out, udmodel, ids, prefix, postfix, identifier) {
+    print(row)
     ### If no pre or postfixes, match *not nothing* i.e. anything
     if (is.na(prefix) || prefix == '') {
       prefix = '$^'
