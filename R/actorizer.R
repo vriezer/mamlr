@@ -22,7 +22,6 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
   }
 
   sentencizer <- function(row, out, udmodel, ids, prefix, postfix, identifier) {
-
     ### If no pre or postfixes, match *not nothing* i.e. anything
     if (is.na(prefix) || prefix == '') {
       prefix = '$^'
@@ -32,8 +31,6 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
     }
     ### Also needs fix for empty strings (non-NA)
     doc <- out[row,]
-    print(doc$merged)
-    print(row)
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "none", doc_id = doc$`_id`)) %>%
       filter(upos != "PUNCT") # Removing punctuation to get accurate word counts
     sentence_count <- length(unique(ud$sentence))
@@ -71,12 +68,12 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
                       str_replace_na(unlist(out$highlight.teaser), replacement = " "),
                       str_replace_na(unlist(out$highlight.text), replacement = " "),
                       sep = " ") %>%
-    # Replacing html tags with whitespaces
-    str_replace_all("<.*?>", " ") %>%
+    # Remove html tags, and multiple consequent whitespaces
+    str_replace_all("<.{0,20}?>", " ") %>%
     str_replace_all("\\s+"," ")
 
   ids <- fromJSON(ids)
-  updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, mc.cores = 1))
+  updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, mc.cores = detectCores()))
   bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add')
   bulk <- c(bulk,apply(updates[c(1,8)], 1, bulk_writer, varname='actors', type = 'add'))
   return(elastic_update(bulk, es_super = es_super, localhost = localhost))

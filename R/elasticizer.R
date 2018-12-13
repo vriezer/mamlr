@@ -18,6 +18,8 @@
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
 elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), size = 1024, update = NULL, localhost = F, ...){
+  retries <- 10 ### Number of retries on error
+  sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
   if (localhost == F) {
     connect(es_port = 443,
@@ -39,10 +41,30 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
   }
   # Get all results - one approach is to use a while loop
   if (src == T) {
-    res <- Search(index = index, time_scroll="20m",body = query, size = size, raw=T)
+    res <- NULL
+    attempt <- 0
+    while( is.null(res) && attempt <= retries ) {
+      if (attempt > 0) {
+        Sys.sleep(sleep)
+      }
+      attempt <- attempt + 1
+      try(
+        res <- Search(index = index, time_scroll="20m",body = query, size = size, raw=T)
+      )
+    }
   }
   if (src == F) {
-    res <- Search(index = index, time_scroll="20m",body = query, size = size, raw=T, source = F)
+    res <- NULL
+    attempt <- 0
+    while( is.null(res) && attempt <= retries ) {
+      if (attempt > 0) {
+        Sys.sleep(sleep)
+      }
+      attempt <- attempt + 1
+      try(
+        res <- Search(index = index, time_scroll="20m",body = query, size = size, raw=T, source = F)
+      )
+    }
   }
   json <- fromJSON(res)
   if (json$hits$total == 0) {
@@ -57,7 +79,17 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       update(out, localhost = localhost, ...)
     }
     while(hits != 0){
-      res <- scroll(json$`_scroll_id`, time_scroll="20m", raw=T)
+      res <- NULL
+      attempt <- 0
+      while( is.null(res) && attempt <= retries ) {
+        if (attempt > 0) {
+          Sys.sleep(sleep)
+        }
+        attempt <- attempt + 1
+        try(
+          res <- scroll(json$`_scroll_id`, time_scroll="20m", raw=T)
+        )
+      }
       json <- fromJSON(res)
       hits <- length(json$hits$hits)
       if(hits > 0) {

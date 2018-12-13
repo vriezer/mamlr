@@ -18,7 +18,7 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
                       str_replace_na(out$`_source.text`, replacement = " "),
                       sep = " ") %>%
     # Remove html tags, and multiple consequent whitespaces
-    str_replace_all("<.*?>", " ") %>%
+    str_replace_all("<.{0,20}?>", " ") %>%
     str_replace_all("\\s+"," ")
   par_proc <- function(row, out, udmodel) {
     doc <- out[row,]

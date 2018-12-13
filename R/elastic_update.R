@@ -25,7 +25,7 @@ elastic_update <- function(x, es_super = 'secret', localhost = T) {
                , encode = "raw"
                , add_headers("Content-Type" = "application/json")
                , times = 10
-               , pause_min = 10
+               , pause_min = 30
   )
   httr:::stop_for_status(res)
   appData <- httr:::content(res)
