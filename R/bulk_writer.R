@@ -27,7 +27,7 @@ bulk_writer <- function(x, index = 'maml', varname = 'updated_variable', type) {
   if (varname == "ud") {
     return(
       paste0('{"update": {"_index": "',index,'", "_type": "doc", "_id": "',x[1],'"}}
-{ "script" : { "source": "ctx._source.ud = params.code", "lang" : "painless", "params": { "code": ',json,'}}}')
+{ "script" : { "source": "ctx._source.ud = params.code; ctx._source.remove(\\"tokens\\")", "lang" : "painless", "params": { "code": ',json,'}}}')
     )
   }
   if (type == 'set') {
