@@ -6,6 +6,7 @@
 #' @param model_final The classification model (e.g. output from textstat_nb(), svm() or others)
 #' @param dfm_words A dfm containing all the words and only the words used to generate the model (is used for subsetting)
 #' @param varname String containing the variable name to use for the classification result, usually has the format computerCodes.varname
+#' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"
 #' @param es_super Password for write access to ElasticSearch
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
@@ -14,9 +15,9 @@
 #################################################################################################
 #################################### Update any kind of classification ##########################
 #################################################################################################
-class_update <- function(out, localhost = T, model_final, dfm_words, varname, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
+class_update <- function(out, localhost = T, model_final, dfm_words, varname, text, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
   print('updating')
-  dfm <- dfm_gen(out, text = 'lemmas') %>%
+  dfm <- dfm_gen(out, text = text) %>%
     dfm_keep(dfm_words, valuetype="fixed", verbose=T)
   pred <- data.frame(id = out$`_id`, pred = predict(model_final, newdata = dfm))
   bulk <- apply(pred, 1, bulk_writer, varname = varname, type = 'set')

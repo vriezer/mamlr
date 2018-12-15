@@ -3,7 +3,7 @@
 #' Generates dfm from ElasticSearch output
 #' @param out The elasticizer-generated data frame
 #' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
-#' @param text String indicating whether the "merged" field will contain the "full" text, or "lemmas"
+#' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"
 #' @return A Quanteda dfm
 #' @export
 #' @examples
@@ -21,8 +21,8 @@ dfm_gen <- function(out, words = '999', text = "lemmas") {
   out <- out %>%
     select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
   fields <- length(names(out))
-  if (text == "lemmas") {
-    out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, mc.cores = detectCores()))
+  if (text == "lemmas" || text == 'ud') {
+    out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, text = text, mc.cores = detectCores()))
   }
   if (text == "full") {
     out$merged <- str_c(str_replace_na(out$`_source.title`, replacement = " "),

@@ -4,7 +4,7 @@
 \alias{class_update}
 \title{Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information}
 \usage{
-class_update(out, localhost = T, model_final, dfm_words, varname,
+class_update(out, localhost = T, model_final, dfm_words, varname, text,
   es_super = .rs.askForPassword("ElasticSearch WRITE"))
 }
 \arguments{
@@ -17,6 +17,8 @@ class_update(out, localhost = T, model_final, dfm_words, varname,
 \item{dfm_words}{A dfm containing all the words and only the words used to generate the model (is used for subsetting)}
 
 \item{varname}{String containing the variable name to use for the classification result, usually has the format computerCodes.varname}
+
+\item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"}
 
 \item{es_super}{Password for write access to ElasticSearch}
 }

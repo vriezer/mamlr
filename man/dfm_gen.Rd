@@ -11,7 +11,7 @@ dfm_gen(out, words = "999", text = "lemmas")
 
 \item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
 
-\item{text}{String indicating whether the "merged" field will contain the "full" text, or "lemmas"}
+\item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"}
 }
 \value{
 A Quanteda dfm

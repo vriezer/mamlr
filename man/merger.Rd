@@ -4,12 +4,14 @@
 \alias{merger}
 \title{Merges list of lemmas back into a pseudo-document}
 \usage{
-merger(row, out = out)
+merger(row, out, text)
 }
 \arguments{
 \item{row}{A row number form the Elasticizer-generated data frame}
 
 \item{out}{The elasticizer-generated data frame}
+
+\item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"}
 
 \item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
 }
@@ -20,5 +22,5 @@ A documentified string of lemmas, one document at a time
 Merges list of lemmas back into a pseudo-document
 }
 \examples{
-merger(1, words = '999', out = out)
+merger(1, words = '999', out, text)
 }
