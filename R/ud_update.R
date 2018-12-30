@@ -10,15 +10,32 @@
 #' @export
 #' @examples
 #' ud_update(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores())
+#'
+
+# punct_check <- function(str) {
+#   if (!(stri_sub(str, from = -1)) %in% c('.','!','?')) {
+#     return(str_c(str, '.'))
+#   }
+# }
+
 ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores()) {
-  out$merged <- str_c(str_replace_na(out$`_source.title`, replacement = " "),
-                      str_replace_na(out$`_source.subtitle`, replacement = " "),
-                      str_replace_na(out$`_source.preteaser`, replacement = " "),
-                      str_replace_na(out$`_source.teaser`, replacement = " "),
-                      str_replace_na(out$`_source.text`, replacement = " "),
-                      sep = " ") %>%
+  ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences
+  out <- out %>%
+    mutate(`_source.title` = str_replace_na(`_source.title`, replacement = '')) %>%
+    mutate(`_source.subtitle` = str_replace_na(`_source.subtitle`, replacement = '')) %>%
+    mutate(`_source.preteaser` = str_replace_na(`_source.preteaser`, replacement = '')) %>%
+    mutate(`_source.teaser` = str_replace_na(`_source.teaser`, replacement = '')) %>%
+    mutate(`_source.text` = str_replace_na(`_source.text`, replacement = ''))
+  out$merged <- str_c(out$`_source.title`,
+                      out$`_source.subtitle`,
+                      out$`_source.preteaser`,
+                      out$`_source.teaser`,
+                      out$`_source.text`,
+                      sep = ". ") %>%
     # Remove html tags, and multiple consequent whitespaces
     str_replace_all("<.{0,20}?>", " ") %>%
+    str_replace_all('(\\. ){2,}', '. ') %>%
+    str_replace_all('([!?.])\\.','\\1') %>%
     str_replace_all("\\s+"," ")
   par_proc <- function(row, out, udmodel) {
     doc <- out[row,]

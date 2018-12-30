@@ -4,7 +4,7 @@
 \alias{bulk_writer}
 \title{Generate a line-delimited JSON string for use in Elasticsearch bulk updates}
 \usage{
-bulk_writer(x, index = "maml", varname = "updated_variable", type)
+bulk_writer(x, index = "maml", varname, type, ver)
 }
 \arguments{
 \item{x}{A single-row data frame, or a string containing the variables and/or values that should be updated (a data frame is converted to a JSON object, strings are stored as-is)}
@@ -14,6 +14,8 @@ bulk_writer(x, index = "maml", varname = "updated_variable", type)
 \item{varname}{String indicating the parent variable that should be updated (when it does not exist, it will be created, all varnames are prefixed by computerCodes)}
 
 \item{type}{Type of updating to be done, can be either 'set', 'add', or 'addnested'}
+
+\item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
 }
 \value{
 A string usable as Elasticsearch bulk update command, in line-delimited JSON
@@ -26,5 +28,5 @@ add: add x to the values of [varname]
 varname: When using ud, the ud field will be updated instead of a computerCodes field
 }
 \examples{
-bulk_writer(x, index = 'maml', varname = 'updated_variable')
+bulk_writer(x, index = 'maml')
 }

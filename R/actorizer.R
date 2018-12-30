@@ -62,14 +62,22 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
   out$highlight.subtitle[is.na(out$highlight.subtitle)] <- out$`_source.subtitle`[is.na(out$highlight.subtitle)]
   out$highlight.preteaser[is.na(out$highlight.preteaser)] <- out$`_source.preteaser`[is.na(out$highlight.preteaser)]
 
-  out$merged <- str_c(str_replace_na(unlist(out$highlight.title), replacement = " "),
-                      str_replace_na(unlist(out$highlight.subtitle), replacement = " "),
-                      str_replace_na(unlist(out$highlight.preteaser), replacement = " "),
-                      str_replace_na(unlist(out$highlight.teaser), replacement = " "),
-                      str_replace_na(unlist(out$highlight.text), replacement = " "),
-                      sep = " ") %>%
+  out <- out %>%
+    mutate(highlight.title = str_replace_na(highlight.title, replacement = '')) %>%
+    mutate(highlight.subtitle = str_replace_na(highlight.subtitle, replacement = '')) %>%
+    mutate(highlight.preteaser = str_replace_na(highlight.preteaser, replacement = '')) %>%
+    mutate(highlight.teaser = str_replace_na(highlight.teaser, replacement = '')) %>%
+    mutate(highlight.text = str_replace_na(highlight.text, replacement = ''))
+  out$merged <- str_c(out$highlight.title,
+                      out$highlight.subtitle,
+                      out$highlight.preteaser,
+                      out$highlight.teaser,
+                      out$highlight.text,
+                      sep = ". ") %>%
     # Remove html tags, and multiple consequent whitespaces
     str_replace_all("<.{0,20}?>", " ") %>%
+    str_replace_all('(\\. ){2,}', '. ') %>%
+    str_replace_all('([!?.])\\.','\\1') %>%
     str_replace_all("\\s+"," ")
 
   ids <- fromJSON(ids)

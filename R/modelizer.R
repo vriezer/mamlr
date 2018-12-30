@@ -33,6 +33,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
   feat_select <- function (topic, dfm, class_type, percentile,measure) {
     keyness <- textstat_keyness(dfm, measure = measure, docvars(dfm, class_type) == as.numeric(topic)) %>%
       na.omit()
+    keyness[,2] <- abs(keyness[,2])
     keyness <- filter(keyness, keyness[,2] > quantile(as.matrix(keyness[,2]),percentile))$feature
     return(keyness)
   }

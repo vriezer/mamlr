@@ -27,4 +27,5 @@ Elasticizer update function: generate UDpipe output from base text
 }
 \examples{
 ud_update(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores())
+
 }

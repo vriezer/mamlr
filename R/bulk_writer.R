@@ -9,14 +9,15 @@
 #' @param index The name of the Elasticsearch index to update
 #' @param varname String indicating the parent variable that should be updated (when it does not exist, it will be created, all varnames are prefixed by computerCodes)
 #' @param type Type of updating to be done, can be either 'set', 'add', or 'addnested'
+#' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
 #' @return A string usable as Elasticsearch bulk update command, in line-delimited JSON
 #' @export
 #' @examples
-#' bulk_writer(x, index = 'maml', varname = 'updated_variable')
+#' bulk_writer(x, index = 'maml')
 #################################################################################################
 #################################### Bulk update writer ################################
 #################################################################################################
-bulk_writer <- function(x, index = 'maml', varname = 'updated_variable', type) {
+bulk_writer <- function(x, index = 'maml', varname, type, ver) {
   ### Create a json object if more than one variable besides _id, otherwise use value as-is
   if (length(x) > 2) {
     json <- toJSON(bind_rows(x)[-1], collapse = T)
@@ -27,19 +28,19 @@ bulk_writer <- function(x, index = 'maml', varname = 'updated_variable', type) {
   if (varname == "ud") {
     return(
       paste0('{"update": {"_index": "',index,'", "_type": "doc", "_id": "',x[1],'"}}
-{ "script" : { "source": "ctx._source.ud = params.code; ctx._source.remove(\\"tokens\\")", "lang" : "painless", "params": { "code": ',json,'}}}')
+{ "script" : { "source": "ctx._source.version = \\"',ver,'\\"; ctx._source.ud = params.code; ctx._source.remove(\\"tokens\\")", "lang" : "painless", "params": { "code": ',json,'}}}')
     )
   }
   if (type == 'set') {
     return(
       paste0('{"update": {"_index": "',index,'", "_type": "doc", "_id": "',x[1],'"}}
-{ "script" : { "source": "if (ctx._source.computerCodes != null) {ctx._source.computerCodes.',varname,' = params.code} else {ctx._source.computerCodes = params.object}", "lang" : "painless", "params": { "code": ',json,', "object": {"',varname,'": ',json,'} }}}')
+{ "script" : { "source": "ctx._source.version = \\"',ver,'\\"; if (ctx._source.computerCodes != null) {ctx._source.computerCodes.',varname,' = params.code} else {ctx._source.computerCodes = params.object}", "lang" : "painless", "params": { "code": ',json,', "object": {"',varname,'": ',json,'} }}}')
     )
   }
   if (type == "add") {
     return(
       paste0('{"update": {"_index": "',index,'", "_type": "doc", "_id": "',x[1],'"}}
-        {"script": {"source": "if (ctx._source.computerCodes != null && ctx._source.computerCodes.containsKey(\\"',varname,'\\")) {ctx._source.computerCodes.',varname,'.addAll(params.code)} else if (ctx._source.computerCodes != null) {ctx._source.computerCodes.',varname,' = params.code} else {ctx._source.computerCodes = params.object}", "lang" : "painless", "params": { "code": ',json,' , "object": {"',varname,'": ',json,'}}}}'
+        {"script": {"source": "ctx._source.version = \\"',ver,'\\"; if (ctx._source.computerCodes != null && ctx._source.computerCodes.containsKey(\\"',varname,'\\")) {ctx._source.computerCodes.',varname,'.addAll(params.code)} else if (ctx._source.computerCodes != null) {ctx._source.computerCodes.',varname,' = params.code} else {ctx._source.computerCodes = params.object}", "lang" : "painless", "params": { "code": ',json,' , "object": {"',varname,'": ',json,'}}}}'
       )
     )
   }
