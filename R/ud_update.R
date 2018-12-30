@@ -42,14 +42,12 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
                       out$`_source.preteaser`,
                       out$`_source.teaser`,
                       out$`_source.text`,
-                      '.',
                       sep = ". ") %>%
     # Remove html tags, and multiple consequent whitespaces
     str_replace_all("<.{0,20}?>", " ") %>%
     str_replace_all('(\\. ){2,}', '. ') %>%
     str_replace_all('([!?.])\\.','\\1') %>%
     str_replace_all("\\s+"," ")
-  # out <- filter(out, nchar(merged) > 1)
   par_proc <- function(row, out, udmodel) {
     doc <- out[row,]
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%
@@ -67,7 +65,7 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
      )
     return(ud)
   }
-  ud <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_proc, out = out, udmodel=udmodel, mc.cores = cores))
+  ud <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_proc, out = out, udmodel=udmodel, mc.cores = cores, mc.preschedule = F))
   bulk <- apply(ud, 1, bulk_writer, varname = 'ud', type = 'set', ver = ver)
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
   return(res)
