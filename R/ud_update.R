@@ -65,7 +65,7 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
      )
     return(ud)
   }
-  ud <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_proc, out = out, udmodel=udmodel, mc.cores = cores, mc.preschedule = F))
+  ud <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_proc, out = out, udmodel=udmodel, mc.cores = cores))
   bulk <- apply(ud, 1, bulk_writer, varname = 'ud', type = 'set', ver = ver)
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
   return(res)
