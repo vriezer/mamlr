@@ -42,12 +42,14 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
                       out$`_source.preteaser`,
                       out$`_source.teaser`,
                       out$`_source.text`,
+                      '.',
                       sep = ". ") %>%
     # Remove html tags, and multiple consequent whitespaces
     str_replace_all("<.{0,20}?>", " ") %>%
     str_replace_all('(\\. ){2,}', '. ') %>%
     str_replace_all('([!?.])\\.','\\1') %>%
     str_replace_all("\\s+"," ")
+  # out <- filter(out, nchar(merged) > 1)
   par_proc <- function(row, out, udmodel) {
     doc <- out[row,]
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%
