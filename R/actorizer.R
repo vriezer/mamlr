@@ -8,12 +8,13 @@
 #' @param postfix Regex containing postfixes that should be excluded from hits
 #' @param identifier String used to mark highlights. Should be a lowercase string
 #' @param udmodel The udpipe model used for parsing every hit
+#' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
 #' @param es_super Password for write access to ElasticSearch
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
 #' @examples
 #' actorizer(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super)
-actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super) {
+actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super, ver) {
   fncols <- function(data, cname) {
     add <-cname[!cname%in%names(data)]
 
@@ -82,7 +83,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
 
   ids <- fromJSON(ids)
   updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, mc.cores = detectCores()))
-  bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add')
-  bulk <- c(bulk,apply(updates[c(1,8)], 1, bulk_writer, varname='actors', type = 'add'))
+  bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
+  bulk <- c(bulk,apply(updates[c(1,8)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
   return(elastic_update(bulk, es_super = es_super, localhost = localhost))
 }

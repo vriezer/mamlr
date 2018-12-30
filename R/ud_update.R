@@ -6,6 +6,7 @@
 #' @param udmodel UDpipe model to use
 #' @param es_super Password for write access to ElasticSearch
 #' @param cores Number of cores to use for parallel processing, defaults to detectCores() (all cores available)
+#' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
 #' @return A vector of 1's indicating the success of each update call
 #' @export
 #' @examples
@@ -18,7 +19,7 @@
 #   }
 # }
 
-ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores()) {
+ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores(), ver) {
   ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences
   out <- out %>%
     mutate(`_source.title` = str_replace_na(`_source.title`, replacement = '')) %>%
@@ -55,7 +56,7 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
     return(ud)
   }
   ud <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_proc, out = out, udmodel=udmodel, mc.cores = cores))
-  bulk <- apply(ud, 1, bulk_writer, varname = 'ud', type = 'set')
+  bulk <- apply(ud, 1, bulk_writer, varname = 'ud', type = 'set', ver = ver)
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
   return(res)
 }

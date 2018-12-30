@@ -6,7 +6,7 @@
 \usage{
 ud_update(out, localhost = T, udmodel,
   es_super = .rs.askForPassword("ElasticSearch WRITE"),
-  cores = detectCores())
+  cores = detectCores(), ver)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
@@ -18,6 +18,8 @@ ud_update(out, localhost = T, udmodel,
 \item{es_super}{Password for write access to ElasticSearch}
 
 \item{cores}{Number of cores to use for parallel processing, defaults to detectCores() (all cores available)}
+
+\item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
 }
 \value{
 A vector of 1's indicating the success of each update call

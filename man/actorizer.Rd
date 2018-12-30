@@ -5,7 +5,7 @@
 \title{Updater function for elasticizer: Conduct actor searches}
 \usage{
 actorizer(out, localhost = F, ids, type, prefix, postfix, identifier,
-  udmodel, es_super)
+  udmodel, es_super, ver)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
@@ -23,6 +23,8 @@ actorizer(out, localhost = F, ids, type, prefix, postfix, identifier,
 \item{udmodel}{The udpipe model used for parsing every hit}
 
 \item{es_super}{Password for write access to ElasticSearch}
+
+\item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
 }
 \value{
 As this is a nested function used within elasticizer, there is no return output
