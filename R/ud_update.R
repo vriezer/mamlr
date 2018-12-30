@@ -20,6 +20,16 @@
 # }
 
 ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores(), ver) {
+  fncols <- function(data, cname) {
+    add <-cname[!cname%in%names(data)]
+
+    if(length(add)!=0) data[add] <- NA
+    data
+  }
+
+  out <- fncols(out, c('_source.text', '_source.title','_source.teaser','_source.subtitle','_source.preteaser'))
+  out <- replace(out, out=="NULL", NA)
+
   ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences
   out <- out %>%
     mutate(`_source.title` = str_replace_na(`_source.title`, replacement = '')) %>%
