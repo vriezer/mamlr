@@ -9,6 +9,7 @@
 #' @param es_super Password for write access to ElasticSearch
 #' @param words Document cutoff point in number of words. Documents are cut off at the last [.?!] before the cutoff (so document will be a little shorter than [words])
 #' @param localhost Defaults to true. When true, connect to a local Elasticsearch instance on the default port (9200)
+#' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
 #' @return dupe_objects.json and data frame containing each id and all its duplicates. remove_ids.txt and character vector with list of ids to be removed. Files are in current working directory
 #' @export
 #' @examples
@@ -17,7 +18,7 @@
 #################################################################################################
 #################################### Duplicate detector ################################
 #################################################################################################
-dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_super, words, localhost = T) {
+dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_super, words, localhost = T, ver) {
   params <- grid[row,]
   print(paste0('Parsing ',params$doctypes,' on ',params$dates ))
   query <- paste0('{"query":
@@ -49,8 +50,8 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_su
       #       append=T)
       dupe_delete <- data.frame(id=unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
                                 dupe_delete = rep(1,length(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))))))
-      bulk <- c(apply(df, 1, bulk_writer, varname='duplicates', type = 'set'),
-                apply(dupe_delete, 1, bulk_writer, varname='_delete', type = 'set'))
+      bulk <- c(apply(df, 1, bulk_writer, varname='duplicates', type = 'set', ver = ver),
+                apply(dupe_delete, 1, bulk_writer, varname='_delete', type = 'set', ver = ver))
       if (length(bulk) > 0) {
         res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
       }

@@ -25,15 +25,7 @@ dfm_gen <- function(out, words = '999', text = "lemmas") {
     out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, text = text, mc.cores = detectCores()))
   }
   if (text == "full") {
-    out$merged <- str_c(str_replace_na(out$`_source.title`, replacement = " "),
-                        str_replace_na(out$`_source.subtitle`, replacement = " "),
-                        str_replace_na(out$`_source.preteaser`, replacement = " "),
-                        str_replace_na(out$`_source.teaser`, replacement = " "),
-                        str_replace_na(out$`_source.text`, replacement = " "),
-                        sep = " ") %>%
-      # Remove html tags
-      str_replace_all("<.*?>", " ") %>%
-      str_replace_all("\\s+"," ")
+    out <- out_parser(out, field = '_source')
   }
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%

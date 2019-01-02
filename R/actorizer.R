@@ -15,13 +15,6 @@
 #' @examples
 #' actorizer(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super)
 actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super, ver) {
-  fncols <- function(data, cname) {
-    add <-cname[!cname%in%names(data)]
-
-    if(length(add)!=0) data[add] <- NA
-    data
-  }
-
   sentencizer <- function(row, out, udmodel, ids, prefix, postfix, identifier) {
     ### If no pre or postfixes, match *not nothing* i.e. anything
     if (is.na(prefix) || prefix == '') {
@@ -52,35 +45,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
 
     return(data.frame(ud,occ = occurences,prom = prominence,rel_first = rel_first, ids = I(list(list(ids)))))
   }
-
-  out <- fncols(out, c("highlight.text","highlight.title","highlight.teaser", "highlight.subtitle", "highlight.preteaser", '_source.text', '_source.title','_source.teaser','_source.subtitle','_source.preteaser'))
-  out <- replace(out, out=="NULL", NA)
-
-  ### Replacing empty highlights with source text (to have the exact same text for udpipe to process)
-  out$highlight.title[is.na(out$highlight.title)] <- out$`_source.title`[is.na(out$highlight.title)]
-  out$highlight.text[is.na(out$highlight.text)] <- out$`_source.text`[is.na(out$highlight.text)]
-  out$highlight.teaser[is.na(out$highlight.teaser)] <- out$`_source.teaser`[is.na(out$highlight.teaser)]
-  out$highlight.subtitle[is.na(out$highlight.subtitle)] <- out$`_source.subtitle`[is.na(out$highlight.subtitle)]
-  out$highlight.preteaser[is.na(out$highlight.preteaser)] <- out$`_source.preteaser`[is.na(out$highlight.preteaser)]
-
-  out <- out %>%
-    mutate(highlight.title = str_replace_na(highlight.title, replacement = '')) %>%
-    mutate(highlight.subtitle = str_replace_na(highlight.subtitle, replacement = '')) %>%
-    mutate(highlight.preteaser = str_replace_na(highlight.preteaser, replacement = '')) %>%
-    mutate(highlight.teaser = str_replace_na(highlight.teaser, replacement = '')) %>%
-    mutate(highlight.text = str_replace_na(highlight.text, replacement = ''))
-  out$merged <- str_c(out$highlight.title,
-                      out$highlight.subtitle,
-                      out$highlight.preteaser,
-                      out$highlight.teaser,
-                      out$highlight.text,
-                      sep = ". ") %>%
-    # Remove html tags, and multiple consequent whitespaces
-    str_replace_all("<.{0,20}?>", " ") %>%
-    str_replace_all('(\\. ){2,}', '. ') %>%
-    str_replace_all('([!?.])\\.','\\1') %>%
-    str_replace_all("\\s+"," ")
-
+  out <- out_parser(out, field = 'highlight')
   ids <- fromJSON(ids)
   updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, mc.cores = detectCores()))
   bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)

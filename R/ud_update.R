@@ -20,34 +20,7 @@
 # }
 
 ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores(), ver) {
-  fncols <- function(data, cname) {
-    add <-cname[!cname%in%names(data)]
-
-    if(length(add)!=0) data[add] <- NA
-    data
-  }
-
-  out <- fncols(out, c('_source.text', '_source.title','_source.teaser','_source.subtitle','_source.preteaser'))
-  out <- replace(out, out=="NULL", NA)
-
-  ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences
-  out <- out %>%
-    mutate(`_source.title` = str_replace_na(`_source.title`, replacement = '')) %>%
-    mutate(`_source.subtitle` = str_replace_na(`_source.subtitle`, replacement = '')) %>%
-    mutate(`_source.preteaser` = str_replace_na(`_source.preteaser`, replacement = '')) %>%
-    mutate(`_source.teaser` = str_replace_na(`_source.teaser`, replacement = '')) %>%
-    mutate(`_source.text` = str_replace_na(`_source.text`, replacement = ''))
-  out$merged <- str_c(out$`_source.title`,
-                      out$`_source.subtitle`,
-                      out$`_source.preteaser`,
-                      out$`_source.teaser`,
-                      out$`_source.text`,
-                      sep = ". ") %>%
-    # Remove html tags, and multiple consequent whitespaces
-    str_replace_all("<.{0,20}?>", " ") %>%
-    str_replace_all('(\\. ){2,}', '. ') %>%
-    str_replace_all('([!?.])\\.','\\1') %>%
-    str_replace_all("\\s+"," ")
+  out <- out_parser(out, field = '_source')
   par_proc <- function(row, out, udmodel) {
     doc <- out[row,]
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%
