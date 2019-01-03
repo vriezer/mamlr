@@ -49,7 +49,7 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_su
       #       file = paste0(getwd(),'/remove_ids.txt'),
       #       append=T)
       dupe_delete <- data.frame(id=unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))),
-                                dupe_delete = rep(1,length(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))))))
+                                dupe_delete = rep(2,length(unique(rownames(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE))))))
       bulk <- c(apply(df, 1, bulk_writer, varname='duplicates', type = 'set', ver = ver),
                 apply(dupe_delete, 1, bulk_writer, varname='_delete', type = 'set', ver = ver))
       if (length(bulk) > 0) {
