@@ -39,6 +39,7 @@ out_parser <- function(out, field) {
                         out$highlight.preteaser,
                         out$highlight.teaser,
                         out$highlight.text,
+                        '',
                         sep = ". ")
   }
 
@@ -54,6 +55,7 @@ out_parser <- function(out, field) {
                         out$`_source.preteaser`,
                         out$`_source.teaser`,
                         out$`_source.text`,
+                        '',
                         sep = ". ")
   }
 
