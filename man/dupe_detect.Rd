@@ -5,7 +5,7 @@
 \title{Get ids of duplicate documents that have a cosine similarity score higher than [threshold]}
 \usage{
 dupe_detect(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_super,
-  words, localhost = T)
+  words, localhost = T, ver)
 }
 \arguments{
 \item{row}{Row of grid to parse}
@@ -23,6 +23,8 @@ dupe_detect(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_super,
 \item{words}{Document cutoff point in number of words. Documents are cut off at the last [.?!] before the cutoff (so document will be a little shorter than [words])}
 
 \item{localhost}{Defaults to true. When true, connect to a local Elasticsearch instance on the default port (9200)}
+
+\item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
 }
 \value{
 dupe_objects.json and data frame containing each id and all its duplicates. remove_ids.txt and character vector with list of ids to be removed. Files are in current working directory

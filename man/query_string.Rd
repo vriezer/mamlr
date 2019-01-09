@@ -4,10 +4,14 @@
 \alias{query_string}
 \title{Generate a query string query for ElasticSearch}
 \usage{
-query_string(x)
+query_string(query, fields = F, random = F)
 }
 \arguments{
-\item{x}{Query string in ElasticSearch query string format}
+\item{query}{Query string in ElasticSearch query string format}
+
+\item{fields}{List of field names to return, defaults to all}
+
+\item{random}{Return randomized results. Boolean, defaults to FALSE}
 }
 \value{
 A formatted ElasticSearch query string query
@@ -16,5 +20,5 @@ A formatted ElasticSearch query string query
 Generate a query string query for ElasticSearch
 }
 \examples{
-query_string(x)
+query_string(query)
 }

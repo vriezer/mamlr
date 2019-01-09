@@ -4,12 +4,12 @@
 \alias{out_parser}
 \title{Parse raw text into a single field}
 \usage{
-out_parser(out, type)
+out_parser(out, field)
 }
 \arguments{
 \item{out}{The original output data frame}
 
-\item{type}{Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text}
+\item{field}{Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text}
 }
 \value{
 a parsed output data frame including the additional column 'merged', containing the merged text
@@ -18,5 +18,5 @@ a parsed output data frame including the additional column 'merged', containing 
 Parse raw text into a single field
 }
 \examples{
-out_parser(out,type)
+out_parser(out,field)
 }

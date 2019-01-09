@@ -5,8 +5,8 @@
 \title{Generate a data frame out of unparsed Elasticsearch JSON}
 \usage{
 elasticizer(query, src = T, index = "maml",
-  es_pwd = .rs.askForPassword("Elasticsearch READ"), size = 1024,
-  update = NULL, localhost = F, ...)
+  es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024,
+  max_batch = Inf, update = NULL, localhost = F, ...)
 }
 \arguments{
 \item{query}{A JSON-formatted query in the Elasticsearch query DSL}
@@ -17,7 +17,9 @@ elasticizer(query, src = T, index = "maml",
 
 \item{es_pwd}{The password for Elasticsearch read access}
 
-\item{size}{Batch size}
+\item{batch_size}{Batch size}
+
+\item{max_batch}{Maximum number batches to retrieve}
 
 \item{update}{When set, indicates an update function to use on each batch of 1000 articles}
 
