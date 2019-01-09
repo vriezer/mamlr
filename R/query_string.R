@@ -13,7 +13,7 @@
 #################################################################################################
 
 query_string <- function(query, fields = F, random = F) {
-  if (fields == F) {
+  if (typeof(fields) == 'logical') {
     fields <- '*'
   }
   if (random == T) {
