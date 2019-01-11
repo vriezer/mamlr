@@ -20,7 +20,7 @@
 # }
 
 ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores(), ver) {
-  out <- out_parser(out, field = '_source')
+  out <- out_parser(out, field = '_source', clean = F)
   par_proc <- function(row, out, udmodel) {
     doc <- out[row,]
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%

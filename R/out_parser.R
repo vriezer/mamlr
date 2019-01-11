@@ -3,6 +3,7 @@
 #' Parse raw text into a single field
 #' @param out The original output data frame
 #' @param field Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text
+#' @param clean Boolean indicating whether the results should be cleaned by removing words matching the regex \S*?[0-9@#$%]+[^\s!?.,;:]*
 #' @return a parsed output data frame including the additional column 'merged', containing the merged text
 #' @examples
 #' out_parser(out,field)
@@ -10,7 +11,7 @@
 #################################################################################################
 #################################### Parser function for output fields ##########################
 #################################################################################################
-out_parser <- function(out, field) {
+out_parser <- function(out, field, clean = F) {
   fncols <- function(data, cname) {
     add <-cname[!cname%in%names(data)]
 
@@ -62,6 +63,7 @@ out_parser <- function(out, field) {
   ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences
   # Remove html tags, and multiple consequent whitespaces
   out$merged <- out$merged %>%
+    {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+[^\\s!?.,;:]*", "")  else . } %>%
     str_replace_all("<.{0,20}?>", " ") %>%
     str_replace_all('(\\. ){2,}', '. ') %>%
     str_replace_all('([!?.])\\.','\\1') %>%

@@ -4,7 +4,7 @@
 \alias{dfm_gen}
 \title{Generates dfm from ElasticSearch output}
 \usage{
-dfm_gen(out, words = "999", text = "lemmas")
+dfm_gen(out, words = "999", text = "lemmas", clean)
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}
@@ -12,6 +12,8 @@ dfm_gen(out, words = "999", text = "lemmas")
 \item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
 
 \item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"}
+
+\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching the regex \S*?[0-9@#$%]+[^\s!?.,;:]*. Lemmatized output is always cleaned!}
 }
 \value{
 A Quanteda dfm

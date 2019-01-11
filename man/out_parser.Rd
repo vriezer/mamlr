@@ -4,12 +4,14 @@
 \alias{out_parser}
 \title{Parse raw text into a single field}
 \usage{
-out_parser(out, field)
+out_parser(out, field, clean = F)
 }
 \arguments{
 \item{out}{The original output data frame}
 
 \item{field}{Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text}
+
+\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching the regex \S*?[0-9@#$%]+[^\s!?.,;:]*}
 }
 \value{
 a parsed output data frame including the additional column 'merged', containing the merged text

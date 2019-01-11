@@ -25,7 +25,7 @@ merger <- function(row, out, text) {
   # Replacing $-marked punctuation with their regular forms
   lemmas <- str_replace_all(lemmas," \\$(.+?)", "\\1") %>%
     ### Removing numbers and non-words containing numbers
-    str_replace_all("\\S*?[0-9@#]+(\\S*?)([:;.,?!\\s])+?", "\\2") %>%
+    str_replace_all("\\S*?[0-9@#$%]+[^\\s!?.,;:]*", "") %>%
     # Adding extra . at end of string to allow for strings that contain less than 150 words and do not end on ". "
     paste0(.,". ")
   return(lemmas)
