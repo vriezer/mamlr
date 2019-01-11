@@ -40,10 +40,11 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_su
       duplicates <- which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)
       duplicates <- cbind(duplicates, rowid= rownames(duplicates))
       rownames(duplicates) <- seq(1:length(rownames(duplicates)))
-      df <- as.data.frame(duplicates, make.names = NA) %>%
-        mutate(colid = colnames(simil)[col]) %>%
+      df <- as.data.frame(duplicates, make.names = NA, stringsAsFactors = F) %>%
+        # bind_cols(colid = colnames(simil)[.['col']]) %>%
+        mutate(colid = colnames(simil)[as.numeric(col)]) %>%
         .[,c(3,4)] %>%
-        group_by(rowid) %>% summarise(colid=list(colid))
+        group_by(colid) %>% summarise(rowid=list(rowid))
       text <- capture.output(stream_out(df))
       # write(text[-length(text)], file = paste0(getwd(),'/dupe_objects.json'), append=T)
       simil[upper.tri(simil)] <- NA
