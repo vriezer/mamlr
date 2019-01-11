@@ -3,7 +3,7 @@
 #' Parse raw text into a single field
 #' @param out The original output data frame
 #' @param field Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text
-#' @param clean Boolean indicating whether the results should be cleaned by removing words matching the regex \S*?[0-9@#$%]+[^\s!?.,;:]*
+#' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code)
 #' @return a parsed output data frame including the additional column 'merged', containing the merged text
 #' @examples
 #' out_parser(out,field)

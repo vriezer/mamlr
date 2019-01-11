@@ -4,7 +4,7 @@
 #' @param out The elasticizer-generated data frame
 #' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
 #' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"
-#' @param clean Boolean indicating whether the results should be cleaned by removing words matching the regex \S*?[0-9@#$%]+[^\s!?.,;:]*. Lemmatized output is always cleaned!
+#' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code). Lemmatized output is always cleaned!
 #' @return A Quanteda dfm
 #' @export
 #' @examples

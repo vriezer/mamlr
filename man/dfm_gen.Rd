@@ -13,7 +13,7 @@ dfm_gen(out, words = "999", text = "lemmas", clean)
 
 \item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"}
 
-\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching the regex \S*?[0-9@#$%]+[^\s!?.,;:]*. Lemmatized output is always cleaned!}
+\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code). Lemmatized output is always cleaned!}
 }
 \value{
 A Quanteda dfm

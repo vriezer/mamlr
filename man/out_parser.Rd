@@ -11,7 +11,7 @@ out_parser(out, field, clean = F)
 
 \item{field}{Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text}
 
-\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching the regex \S*?[0-9@#$%]+[^\s!?.,;:]*}
+\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code)}
 }
 \value{
 a parsed output data frame including the additional column 'merged', containing the merged text

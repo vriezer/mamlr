@@ -33,15 +33,17 @@ dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_su
                   } } }')
   out <- elasticizer(query, es_pwd = es_pwd, localhost= localhost)
   if (class(out$hits$hits) != 'list') {
-    dfm <- dfm_gen(out, text = "full", words = words)
+    dfm <- dfm_gen(out, text = "full", words = words, clean = T)
     if (sum(dfm[1,]) > 0) {
       simil <- as.matrix(textstat_simil(dfm, margin="documents", method="cosine"))
       diag(simil) <- NA
-      df <- as.data.frame(which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)) %>%
-        rownames_to_column("rowid") %>%
+      duplicates <- which(simil >= cutoff_lower & simil <= cutoff_upper, arr.ind = TRUE)
+      duplicates <- cbind(duplicates, rowid= rownames(duplicates))
+      rownames(duplicates) <- seq(1:length(rownames(duplicates)))
+      df <- as.data.frame(duplicates, make.names = NA) %>%
         mutate(colid = colnames(simil)[col]) %>%
-        .[,c(1,4)] %>%
-        group_by(colid) %>% summarise(rowid=list(rowid))
+        .[,c(3,4)] %>%
+        group_by(rowid) %>% summarise(colid=list(colid))
       text <- capture.output(stream_out(df))
       # write(text[-length(text)], file = paste0(getwd(),'/dupe_objects.json'), append=T)
       simil[upper.tri(simil)] <- NA
