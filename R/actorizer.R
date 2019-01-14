@@ -38,7 +38,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
         token_id = list(list(as.integer(token_id))),
         text = list(list(unique(as.character(sentence))))
       )
-    occurences <- length(unique(ud$sentence_id)) # Number of sentences in which actor occurs
+    occurences <- length(unique(ud$sentence_id[[1]][[1]])) # Number of sentences in which actor occurs
     prominence <- occurences/sentence_count # Relative prominence of actor in article (number of occurences/total # sentences)
     rel_first <- 1-(ud$sentence_id[[1]][[1]][1]/sentence_count) # Relative position of first occurence at sentence level
 
