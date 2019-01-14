@@ -9,12 +9,13 @@
 #' @param identifier String used to mark highlights. Should be a lowercase string
 #' @param udmodel The udpipe model used for parsing every hit
 #' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
+#' @param type Either 'add' or 'set', to determine wether actors should be added to the list, or overwritten. Default = 'add'
 #' @param es_super Password for write access to ElasticSearch
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
 #' @examples
 #' actorizer(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super)
-actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super, ver) {
+actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier, udmodel, es_super, ver, type = 'add') {
   sentencizer <- function(row, out, udmodel, ids, prefix, postfix, identifier) {
     ### If no pre or postfixes, match *not nothing* i.e. anything
     if (is.na(prefix) || prefix == '') {
@@ -25,8 +26,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
     }
     ### Also needs fix for empty strings (non-NA)
     doc <- out[row,]
-    ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "none", doc_id = doc$`_id`)) %>%
-      filter(upos != "PUNCT") # Removing punctuation to get accurate word counts
+    ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "none", doc_id = doc$`_id`))
     sentence_count <- length(unique(ud$sentence))
     ud <- ud %>%
       filter(grepl(paste0(identifier), sentence)) %>% # Only select sentences that contain the identifier
@@ -48,7 +48,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
   out <- out_parser(out, field = 'highlight', clean = F)
   ids <- fromJSON(ids)
   updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, mc.cores = detectCores()))
-  bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
-  bulk <- c(bulk,apply(updates[c(1,8)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
+  bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = type, ver = ver)
+  bulk <- c(bulk,apply(updates[c(1,8)], 1, bulk_writer, varname='actors', type = type, ver = ver))
   return(elastic_update(bulk, es_super = es_super, localhost = localhost))
 }
