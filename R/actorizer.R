@@ -45,7 +45,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
 
     return(data.frame(ud,occ = occurences,prom = prominence,rel_first = rel_first, ids = I(list(list(ids)))))
   }
-  out <- out_parser(out, field = 'highlight')
+  out <- out_parser(out, field = 'highlight', clean = F)
   ids <- fromJSON(ids)
   updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, mc.cores = detectCores()))
   bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
