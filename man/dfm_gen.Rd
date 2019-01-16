@@ -11,9 +11,9 @@ dfm_gen(out, words = "999", text = "lemmas", clean)
 
 \item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
 
-\item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"}
+\item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags}
 
-\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code). Lemmatized output is always cleaned!}
+\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code).}
 }
 \value{
 A Quanteda dfm

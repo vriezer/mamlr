@@ -4,7 +4,7 @@
 \alias{merger}
 \title{Merges list of lemmas back into a pseudo-document}
 \usage{
-merger(row, out, text)
+merger(row, out, text, clean)
 }
 \arguments{
 \item{row}{A row number form the Elasticizer-generated data frame}
@@ -12,6 +12,8 @@ merger(row, out, text)
 \item{out}{The elasticizer-generated data frame}
 
 \item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"}
+
+\item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code).}
 
 \item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
 }

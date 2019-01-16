@@ -3,8 +3,8 @@
 #' Generates dfm from ElasticSearch output
 #' @param out The elasticizer-generated data frame
 #' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
-#' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"
-#' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code). Lemmatized output is always cleaned!
+#' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags
+#' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code).
 #' @return A Quanteda dfm
 #' @export
 #' @examples
@@ -22,9 +22,8 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean) {
   out <- out %>%
     select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
   fields <- length(names(out))
-  if (text == "lemmas" || text == 'ud') {
-    out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, text = text, mc.cores = detectCores()))
-
+  if (text == "lemmas" || text == 'ud' || text == 'ud_upos') {
+    out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, text = text, clean = clean, mc.cores = detectCores()))
   }
   if (text == "full") {
     out <- out_parser(out, field = '_source' , clean = clean)
@@ -57,8 +56,11 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean) {
   if (words != "999") {
     ### Former word count regex, includes words up until the next sentence boundary, instead of cutting to the last sentence boundary
     # out$merged2 <- str_extract(lemmas, str_c("^(([\\s\\S]*? ){0,",words,"}[\\s\\S]*?[.!?])\\s+?"))
-    out <- out %>% rowwise() %>% mutate(merged = paste0(str_split(merged, '\\s')[[1]][1:words], collapse = ' ') %>%
-                                          str_extract('.*[.?!]'))
+    out <- out %>% rowwise() %>% mutate(merged = paste0(str_split(merged, '\\s')[[1]][1:words], collapse = ' '))
+
+    if(text != 'ud_upos') {
+      out$merged <- str_extract(out$merged,'.*[.?!]')
+    }
   }
   dfm <- corpus(out$merged, docnames = out$`_id`, docvars = vardoc) %>%
     dfm(tolower = T, stem = F, remove_punct = T, valuetype = "regex", ngrams = 1)
