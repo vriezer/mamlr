@@ -29,6 +29,10 @@ merger <- function(row, out, text, clean) {
       # Regex removes all words consisting of or containing numbers, @#$%
       # Punctuation is not taken into account, as it is already filtered out, see above
     {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+[^\\s]*", "")  else . }
+    # In the very rare but obviously occuring (CxqrOmMB4Bzg6Uhtzw0P) case that a document consists only of punctuation, return an empty string
+    if (length(lemmas) == 0 ){
+      lemmas <- ''
+    }
     return(lemmas)
   }
   # Replacing $-marked punctuation with their regular forms
