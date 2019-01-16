@@ -9,6 +9,7 @@
 #' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
 #' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags
 #' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code).
+#' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
 #' @param es_super Password for write access to ElasticSearch
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
@@ -17,11 +18,11 @@
 #################################################################################################
 #################################### Update any kind of classification ##########################
 #################################################################################################
-class_update <- function(out, localhost = T, model_final, dfm_words, varname, text, words, clean, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
+class_update <- function(out, localhost = T, model_final, dfm_words, varname, text, words, clean, ver, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
   print('updating')
   dfm <- dfm_gen(out, text = text, words = words, clean = clean) %>%
     dfm_keep(dfm_words, valuetype="fixed", verbose=T)
   pred <- data.frame(id = out$`_id`, pred = predict(model_final, newdata = dfm))
-  bulk <- apply(pred, 1, bulk_writer, varname = varname, type = 'set')
+  bulk <- apply(pred, 1, bulk_writer, varname = varname, type = 'set', ver = ver)
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
 }

@@ -5,7 +5,8 @@
 \title{Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information}
 \usage{
 class_update(out, localhost = T, model_final, dfm_words, varname, text,
-  words, clean, es_super = .rs.askForPassword("ElasticSearch WRITE"))
+  words, clean, ver,
+  es_super = .rs.askForPassword("ElasticSearch WRITE"))
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
@@ -23,6 +24,8 @@ class_update(out, localhost = T, model_final, dfm_words, varname, text,
 \item{words}{String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document}
 
 \item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code).}
+
+\item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
 
 \item{es_super}{Password for write access to ElasticSearch}
 }
