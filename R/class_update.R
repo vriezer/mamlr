@@ -6,7 +6,9 @@
 #' @param model_final The classification model (e.g. output from textstat_nb(), svm() or others)
 #' @param dfm_words A dfm containing all the words and only the words used to generate the model (is used for subsetting)
 #' @param varname String containing the variable name to use for the classification result, usually has the format computerCodes.varname
-#' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud"
+#' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
+#' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags
+#' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code).
 #' @param es_super Password for write access to ElasticSearch
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
@@ -15,9 +17,9 @@
 #################################################################################################
 #################################### Update any kind of classification ##########################
 #################################################################################################
-class_update <- function(out, localhost = T, model_final, dfm_words, varname, text, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
+class_update <- function(out, localhost = T, model_final, dfm_words, varname, text, words, clean, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
   print('updating')
-  dfm <- dfm_gen(out, text = text) %>%
+  dfm <- dfm_gen(out, text = text, words = words, clean = clean) %>%
     dfm_keep(dfm_words, valuetype="fixed", verbose=T)
   pred <- data.frame(id = out$`_id`, pred = predict(model_final, newdata = dfm))
   bulk <- apply(pred, 1, bulk_writer, varname = varname, type = 'set')
