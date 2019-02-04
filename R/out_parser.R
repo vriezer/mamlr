@@ -65,6 +65,8 @@ out_parser <- function(out, field, clean = F) {
   # Regex removes all words consisting of or containing numbers, @#$%
   # Punctuation is only filtered out when not followed by a whitespace character, and when the word contains any of the characters above
   # Regex also used in merger function
+  ### Old regex, used for duplicate detection:
+  # \\S*?[0-9@#$%]+[^\\s!?.,;:]*
   out$merged <- out$merged %>%
     {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+([^\\s!?.,;:]|[!?.,:;]\\S)*", "")  else . } %>%
     str_replace_all("<.{0,20}?>", " ") %>%

@@ -26,7 +26,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
     ### Also needs fix for empty strings (non-NA)
     doc <- out[row,]
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "none", doc_id = doc$`_id`))
-    sentence_count <- length(unique(ud$sentence))
+    sentence_count <- length(unique(ud$sentence_id))
     ud <- ud %>%
       filter(grepl(paste0(identifier), sentence)) %>% # Only select sentences that contain the identifier
       filter(!str_detect(sentence, postfix)) %>% # Filter out sentences with matching postfixes (false positives)
@@ -44,7 +44,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
 
     return(data.frame(ud,occ = occurences,prom = prominence,rel_first = rel_first, ids = I(list(list(ids)))))
   }
-  out <- out_parser(out, field = 'highlight', clean = F)
+  out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
   ids <- fromJSON(ids)
   updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, mc.cores = detectCores()))
   bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
