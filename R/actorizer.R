@@ -24,8 +24,18 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
       postfix = '$^'
     }
     ### Also needs fix for empty strings (non-NA)
+    err <- F
     doc <- out[row,]
+    ud_org <- doc$`_source.ud`[[1]] %>%
+      select(-one_of('exists')) %>% # Removing ud.exists variable
+      unnest()
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "none", doc_id = doc$`_id`))
+    if (length(ud_org$sentence_id) == length(ud$sentence_id)) {
+      ud <- bind_cols(ud_org, sentence = ud$sentence, token = ud$token, doc_id = ud$doc_id)
+    } else {
+      err = T
+      print(paste0('ud_org and ud_actor not the same length for id ', doc$`_id`))
+    }
     sentence_count <- length(unique(ud$sentence_id))
     ud <- ud %>%
       filter(grepl(paste0(identifier), sentence)) %>% # Only select sentences that contain the identifier
@@ -42,7 +52,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
     prominence <- occurences/sentence_count # Relative prominence of actor in article (number of occurences/total # sentences)
     rel_first <- 1-(ud$sentence_id[[1]][[1]][1]/sentence_count) # Relative position of first occurence at sentence level
 
-    return(data.frame(ud,occ = occurences,prom = prominence,rel_first = rel_first, ids = I(list(list(ids)))))
+    return(data.frame(ud,occ = occurences,prom = prominence,rel_first = rel_first, ids = I(list(list(ids))), err = err))
   }
   out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
   ids <- fromJSON(ids)
