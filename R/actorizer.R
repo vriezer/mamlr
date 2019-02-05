@@ -33,7 +33,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
 
     ### The exception below is only valid for the UK, where the original UDPipe output misses a dot at the end of the article, but the actor output does not
     ### (UK output is older than actor output, should be updated)
-    if (!(ud_org$lemma[length(ud_org$lemma)] %in% c('!','?','.'))) {
+    if (length(ud_org$sentence_id) == length(ud$sentence_id)-1) {
       ud <- ud[-length(ud$sentence_id),]
     }
     if (length(ud_org$sentence_id) == length(ud$sentence_id)) {
@@ -41,6 +41,8 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
     } else {
       err = T
       print(paste0('ud_org and ud_actor not the same length for id ', doc$`_id`))
+      print(length(ud_org$sentence_id))
+      print(length(ud$sentence_id))
     }
     sentence_count <- length(unique(ud$sentence_id))
     ud <- ud %>%
