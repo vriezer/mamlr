@@ -30,10 +30,12 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
       select(-one_of('exists')) %>% # Removing ud.exists variable
       unnest()
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "none", doc_id = doc$`_id`))
-    
-    ### The exception below is only valid for the UK, where the original UDPipe output misses a dot at the end of the article, but the actor output does not 
+
+    ### The exception below is only valid for the UK, where the original UDPipe output misses a dot at the end of the article, but the actor output does not
     ### (UK output is older than actor output, should be updated)
-    ud <- ud[-length(ud$sentence_id),]
+    if (!(ud_org$lemma[length(ud_org$lemma)] %in% c('!','?','.'))) {
+      ud <- ud[-length(ud$sentence_id),]
+    }
     if (length(ud_org$sentence_id) == length(ud$sentence_id)) {
       ud <- bind_cols(ud_org, sentence = ud$sentence, token = ud$token, doc_id = ud$doc_id)
     } else {
