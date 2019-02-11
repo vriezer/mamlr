@@ -30,14 +30,17 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
       select(-one_of('exists')) %>% # Removing ud.exists variable
       unnest()
     ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "none", doc_id = doc$`_id`))
-
-    ### The exception below is only valid for the UK, where the original UDPipe output misses a dot at the end of the article, but the actor output does not
-    ### (UK output is older than actor output, should be updated)
+    ud[,'actor'] <- NA
+    markers <- which(str_detect(ud$lemma, coll("|||")))
+    ud[markers+1,'actor'] <- T
+    ud <- ud[-markers,]
+    ## The exception below is only valid for the UK, where the original UDPipe output misses a dot at the end of the article, but the actor output does not
+    ## (UK output is older than actor output, should be updated)
     if (length(ud_org$sentence_id) == length(ud$sentence_id)-1) {
       ud <- ud[-length(ud$sentence_id),]
     }
     if (length(ud_org$sentence_id) == length(ud$sentence_id)) {
-      ud <- bind_cols(ud_org, sentence = ud$sentence, token = ud$token, doc_id = ud$doc_id)
+      ud <- bind_cols(ud_org, sentence = ud$sentence, token = ud$token, doc_id = ud$doc_id, actor = ud$actor)
     } else {
       err = T
       print(paste0('ud_org and ud_actor not the same length for id ', doc$`_id`))
@@ -46,10 +49,9 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
     }
     sentence_count <- length(unique(ud$sentence_id))
     ud <- ud %>%
-      filter(grepl(paste0(identifier), sentence)) %>% # Only select sentences that contain the identifier
+      filter(T, actor) %>% # Only select tokens containing actor
       filter(!str_detect(sentence, postfix)) %>% # Filter out sentences with matching postfixes (false positives)
       filter(!str_detect(sentence, prefix)) %>% # Filter out sentences with matching prefixes (false positives)
-      filter(grepl(paste0(identifier,'.*'), token)) %>% # Only select tokens that start with the identifier
       group_by(doc_id) %>%
       summarise(
         sentence_id = list(list(as.integer(sentence_id))),
