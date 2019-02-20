@@ -27,7 +27,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
       return(NULL)
     }
   }
-  sentencizer <- function(row, out, udmodel, ids, prefix, postfix, identifier, type) {
+  sentencizer <- function(row, out, ids, prefix, postfix, identifier, type) {
     print(row)
     ### If no pre or postfixes, match *not nothing* i.e. anything
     if (is.na(prefix) || prefix == '') {
@@ -115,8 +115,8 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
   out$markers <- lapply(str_locate_all(out$merged,coll(identifier)), offsetter)
 
   ids <- fromJSON(ids)
-  updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, udmodel = udmodel, type = type, mc.cores = detectCores()))
+  updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, type = type, mc.cores = detectCores()))
   bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail2', type = 'add', ver = ver)
-  bulk <- c(bulk,apply(updates[c(1,8)], 1, bulk_writer, varname='actors2', type = 'add', ver = ver))
+  bulk <- c(bulk,apply(updates[c(1,9)], 1, bulk_writer, varname='actors2', type = 'add', ver = ver))
   return(elastic_update(bulk, es_super = es_super, localhost = localhost))
 }
