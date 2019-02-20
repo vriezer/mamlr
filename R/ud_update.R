@@ -20,13 +20,12 @@
 # }
 
 ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores(), ver) {
-  out <- out_parser(out, field = '_source', clean = F)
+  out <- mamlr:::out_parser(out, field = '_source', clean = F)
   par_proc <- function(row, out, udmodel) {
     doc <- out[row,]
-    ud <- as.data.frame(udpipe_annotate(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%
+    ud <- as.data.frame(udpipe(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%
       group_by(doc_id) %>%
       summarise(
-        paragraph_id = list(list(as.integer(paragraph_id))),
         sentence_id = list(list(as.integer(sentence_id))),
         token_id = list(list(as.integer(token_id))),
         lemma = list(list(as.character(lemma))),
@@ -34,6 +33,8 @@ ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword
         feats = list(list(as.character(feats))),
         head_token_id = list(list(as.integer(head_token_id))),
         dep_rel = list(list(as.character(dep_rel))),
+        start = list(list(as.integer(start))),
+        end = list(list(as.integer(end))),
         exists = list(list(TRUE))
      )
     return(ud)
