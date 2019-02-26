@@ -20,8 +20,8 @@
 bulk_writer <- function(x, index = 'maml', varname, type, ver) {
   ### Create a json object if more than one variable besides _id, otherwise use value as-is
   if (length(x) > 2) {
-    json <- toJSON(bind_rows(x)[-1], collapse = T)
-  x} else {
+    json <- toJSON(list(x[-1]), collapse = T)
+  } else {
     names(x) <- NULL
     json <- toJSON(x[-1], collapse = T)
   }
