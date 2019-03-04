@@ -20,58 +20,67 @@ out_parser <- function(out, field, clean = F) {
   }
 
   out <- fncols(out, c("highlight.text","highlight.title","highlight.teaser", "highlight.subtitle", "highlight.preteaser", '_source.text', '_source.title','_source.teaser','_source.subtitle','_source.preteaser'))
-  if (field == 'highlight') {
-    out <- replace(out, out=="NULL", NA)
-    ### Replacing empty highlights with source text (to have the exact same text for udpipe to process)
-    out$highlight.title[is.na(out$highlight.title)] <- out$`_source.title`[is.na(out$highlight.title)]
-    out$highlight.text[is.na(out$highlight.text)] <- out$`_source.text`[is.na(out$highlight.text)]
-    out$highlight.teaser[is.na(out$highlight.teaser)] <- out$`_source.teaser`[is.na(out$highlight.teaser)]
-    out$highlight.subtitle[is.na(out$highlight.subtitle)] <- out$`_source.subtitle`[is.na(out$highlight.subtitle)]
-    out$highlight.preteaser[is.na(out$highlight.preteaser)] <- out$`_source.preteaser`[is.na(out$highlight.preteaser)]
+  par_parser <- function(row, out, field, clean) {
+    doc <- out[row,]
+    if (field == 'highlight') {
+      doc <- replace(doc, doc=="NULL", NA)
+      ### Replacing empty highlights with source text (to have the exact same text for udpipe to process)
+      doc$highlight.title[is.na(doc$highlight.title)] <- doc$`_source.title`[is.na(doc$highlight.title)]
+      doc$highlight.text[is.na(doc$highlight.text)] <- doc$`_source.text`[is.na(doc$highlight.text)]
+      doc$highlight.teaser[is.na(doc$highlight.teaser)] <- doc$`_source.teaser`[is.na(doc$highlight.teaser)]
+      doc$highlight.subtitle[is.na(doc$highlight.subtitle)] <- doc$`_source.subtitle`[is.na(doc$highlight.subtitle)]
+      doc$highlight.preteaser[is.na(doc$highlight.preteaser)] <- doc$`_source.preteaser`[is.na(doc$highlight.preteaser)]
 
-    out <- out %>%
-      mutate(highlight.title = str_replace_na(highlight.title, replacement = '')) %>%
-      mutate(highlight.subtitle = str_replace_na(highlight.subtitle, replacement = '')) %>%
-      mutate(highlight.preteaser = str_replace_na(highlight.preteaser, replacement = '')) %>%
-      mutate(highlight.teaser = str_replace_na(highlight.teaser, replacement = '')) %>%
-      mutate(highlight.text = str_replace_na(highlight.text, replacement = ''))
-    out$merged <- str_c(out$highlight.title,
-                        out$highlight.subtitle,
-                        out$highlight.preteaser,
-                        out$highlight.teaser,
-                        out$highlight.text,
-                        '',
-                        sep = ". ")
+      doc <- doc %>%
+        mutate(highlight.title = str_replace_na(highlight.title, replacement = '')) %>%
+        mutate(highlight.subtitle = str_replace_na(highlight.subtitle, replacement = '')) %>%
+        mutate(highlight.preteaser = str_replace_na(highlight.preteaser, replacement = '')) %>%
+        mutate(highlight.teaser = str_replace_na(highlight.teaser, replacement = '')) %>%
+        mutate(highlight.text = str_replace_na(highlight.text, replacement = ''))
+      doc$merged <- str_c(doc$highlight.title,
+                          doc$highlight.subtitle,
+                          doc$highlight.preteaser,
+                          doc$highlight.teaser,
+                          doc$highlight.text,
+                          '',
+                          sep = ". ")
+    }
+
+    if (field == '_source') {
+      doc <- doc %>%
+        mutate(`_source.title` = str_replace_na(`_source.title`, replacement = '')) %>%
+        mutate(`_source.subtitle` = str_replace_na(`_source.subtitle`, replacement = '')) %>%
+        mutate(`_source.preteaser` = str_replace_na(`_source.preteaser`, replacement = '')) %>%
+        mutate(`_source.teaser` = str_replace_na(`_source.teaser`, replacement = '')) %>%
+        mutate(`_source.text` = str_replace_na(`_source.text`, replacement = ''))
+      doc$merged <- str_c(doc$`_source.title`,
+                          doc$`_source.subtitle`,
+                          doc$`_source.preteaser`,
+                          doc$`_source.teaser`,
+                          doc$`_source.text`,
+                          '',
+                          sep = ". ")
+    }
+
+    ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences
+    # Remove html tags, and multiple consequent whitespaces
+    # Regex removes all words consisting of or containing numbers, @#$%
+    # Punctuation is only filtered out when not followed by a whitespace character, and when the word contains any of the characters above
+    # Regex also used in merger function
+    ### Old regex, used for duplicate detection:
+    # \\S*?[0-9@#$%]+[^\\s!?.,;:]*
+    doc$merged <- doc$merged %>%
+      str_replace_all("<.{0,20}?>", " ") %>%
+      str_replace_all('(\\. ){2,}', '. ') %>%
+      str_replace_all('([!?.])\\.','\\1') %>%
+      str_replace_all("\\s+"," ") %>%
+      {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+([^\\s!?.,;:]|[!?.,:;]\\S)*", "")  else . }
+    return(doc)
   }
-
-  if (field == '_source') {
-    out <- out %>%
-      mutate(`_source.title` = str_replace_na(`_source.title`, replacement = '')) %>%
-      mutate(`_source.subtitle` = str_replace_na(`_source.subtitle`, replacement = '')) %>%
-      mutate(`_source.preteaser` = str_replace_na(`_source.preteaser`, replacement = '')) %>%
-      mutate(`_source.teaser` = str_replace_na(`_source.teaser`, replacement = '')) %>%
-      mutate(`_source.text` = str_replace_na(`_source.text`, replacement = ''))
-    out$merged <- str_c(out$`_source.title`,
-                        out$`_source.subtitle`,
-                        out$`_source.preteaser`,
-                        out$`_source.teaser`,
-                        out$`_source.text`,
-                        '',
-                        sep = ". ")
+  if (Sys.info()[['sysname']] == "Windows") {
+    cores <- 1
+  } else {
+    cores <- detectCores()
   }
-
-  ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences
-  # Remove html tags, and multiple consequent whitespaces
-  # Regex removes all words consisting of or containing numbers, @#$%
-  # Punctuation is only filtered out when not followed by a whitespace character, and when the word contains any of the characters above
-  # Regex also used in merger function
-  ### Old regex, used for duplicate detection:
-  # \\S*?[0-9@#$%]+[^\\s!?.,;:]*
-  out$merged <- out$merged %>%
-    str_replace_all("<.{0,20}?>", " ") %>%
-    str_replace_all('(\\. ){2,}', '. ') %>%
-    str_replace_all('([!?.])\\.','\\1') %>%
-    str_replace_all("\\s+"," ") %>%
-    {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+([^\\s!?.,;:]|[!?.,:;]\\S)*", "")  else . }
-  return(out)
+  out <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_parser, out = out, clean = clean, field = field, mc.cores = cores))
 }
