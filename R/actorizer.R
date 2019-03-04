@@ -94,11 +94,11 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
     )
   }
   out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
-  offsetter <- function(x) {
+  offsetter <- function(x, identifier) {
     return(x-((row(x)-1)*nchar(identifier)))
   }
   regex_identifier <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", identifier)
-  out$markers <- lapply(str_locate_all(out$merged,coll(identifier)), offsetter)
+  out$markers <- mclapply(str_locate_all(out$merged,coll(identifier)), offsetter, identifier = identifier, mc.cores = detectCores())
 
   ids <- fromJSON(ids)
   updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, type = type, mc.cores = detectCores()))
