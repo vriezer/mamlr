@@ -68,10 +68,10 @@ out_parser <- function(out, field, clean = F) {
   ### Old regex, used for duplicate detection:
   # \\S*?[0-9@#$%]+[^\\s!?.,;:]*
   out$merged <- out$merged %>%
-    {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+([^\\s!?.,;:]|[!?.,:;]\\S)*", "")  else . } %>%
     str_replace_all("<.{0,20}?>", " ") %>%
     str_replace_all('(\\. ){2,}', '. ') %>%
     str_replace_all('([!?.])\\.','\\1') %>%
-    str_replace_all("\\s+"," ")
+    str_replace_all("\\s+"," ") %>%
+    {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+([^\\s!?.,;:]|[!?.,:;]\\S)*", "")  else . }
   return(out)
 }
