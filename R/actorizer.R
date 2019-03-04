@@ -40,7 +40,7 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
       mutate(doc_id = doc$`_id`)
     markers <- doc$markers[[1]][,'start'] # Extract list of markers
     # Convert markers to udpipe rows (in some cases the start position doesn't align with the udpipe token start position (e.g. when anti-|||EU is treated as a single word))
-    rows <- unlist(mclapply(markers, ranger, ud = ud, mc.cores = detectCores()))
+    rows <- unlist(lapply(markers, ranger, ud = ud))
 
     # Setting up an actor variable
     ud$actor <- F
