@@ -26,7 +26,7 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean) {
     out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, text = text, clean = clean, mc.cores = detectCores()))
   }
   if (text == "full") {
-    out <- out_parser(out, field = '_source' , clean = clean)
+    out <- mamlr:::out_parser(out, field = '_source' , clean = clean)
   }
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%
