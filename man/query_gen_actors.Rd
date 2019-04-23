@@ -4,14 +4,16 @@
 \alias{query_gen_actors}
 \title{Generate actor search queries based on data in actor db}
 \usage{
-query_gen_actors(actor, country, identifier)
+query_gen_actors(actor, country, pre_tags, post_tags)
 }
 \arguments{
 \item{actor}{A row from the output of elasticizer() when run on the 'actor' index}
 
 \item{country}{2-letter string indicating the country for which to generate the queries, is related to inflected nouns, definitive forms and genitive forms of names etc.}
 
-\item{identifier}{Identifier used to mark hits in the text, identifiers are prepended before the actual hit}
+\item{pre_tags}{Highlighter pre-tag}
+
+\item{post_tags}{Highlighter post-tag}
 }
 \value{
 A data frame containing the queries, related actor ids and actor function

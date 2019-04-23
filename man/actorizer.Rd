@@ -4,8 +4,8 @@
 \alias{actorizer}
 \title{Updater function for elasticizer: Conduct actor searches}
 \usage{
-actorizer(out, localhost = F, ids, type, prefix, postfix, identifier,
-  es_super, ver)
+actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super,
+  ver)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
@@ -31,5 +31,5 @@ As this is a nested function used within elasticizer, there is no return output
 Updater function for elasticizer: Conduct actor searches
 }
 \examples{
-actorizer(out, localhost = F, ids, type, prefix, postfix, identifier, es_super)
+actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super)
 }

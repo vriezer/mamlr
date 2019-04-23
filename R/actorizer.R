@@ -12,17 +12,19 @@
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
 #' @examples
-#' actorizer(out, localhost = F, ids, type, prefix, postfix, identifier, es_super)
-actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier, es_super, ver) {
+#' actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super)
+actorizer <- function(out, localhost = F, ids, prefix, postfix, identifier, es_super, ver) {
   ### Function to filter out false positives using regex
-  exceptionizer <- function(id, ud, doc, markers, regex_identifier, prefix, postfix) {
+  exceptionizer <- function(id, ud, doc, markers, pre_tags_regex, post_tags_regex,pre_tags,post_tags, prefix, postfix) {
     min <- min(ud$start[ud$sentence_id == id]) # Get start position of sentence
     max <- max(ud$end[ud$sentence_id == id]) # Get end position of sentence
     split <- markers[markers %in% seq(min, max, 1)] # Get markers in sentence
-    max <- max+(length(split)*nchar(identifier)) # Set end position to include markers (e.g if there are two markers of three characters in the sentence, the end position needs to be shifted by +6)
+    min <- min+((nchar(pre_tags)+nchar(post_tags))*((match(split,markers))-1))
+    max <- max+((nchar(pre_tags)+nchar(post_tags))*match(split,markers)) # Set end position to include markers (e.g if there are two markers of three characters in the sentence, the end position needs to be shifted by +6)
     sentence <- str_sub(doc$merged, min, max) # Extract sentence from text
+
     # Check if none of the regexes match, if so, return sentence id, otherwise (if one of the regexes match) return nothing
-    if (!str_detect(sentence, paste0(regex_identifier,postfix)) && !str_detect(sentence, paste0(prefix,regex_identifier))) {
+    if (!str_detect(sentence, paste0(post_tags_regex,'(',postfix,')')) && !str_detect(sentence, paste0('(',prefix,')',pre_tags_regex))) {
       return(id)
     } else {
       return(NULL)
@@ -31,8 +33,16 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
   ranger <- function(x, ud) {
     return(which((ud$start <= x) & (ud$end >= x)))
   }
-  sentencizer <- function(row, out, ids, prefix, postfix, identifier, type) {
+  sentencizer <- function(row, out, ids, prefix, postfix, pre_tags, post_tags, pre_tags_regex, post_tags_regex) {
     doc <- out[row,]
+    if (nchar(doc$merged) > 990000) {
+      return(
+        data.frame(
+          err = T,
+          errorMessage = "Merged document exceeded 990000 characters, highlighting possibly incorrect"
+        )
+      )
+    }
     # Extracting ud output from document
     ud <- doc$`_source.ud`[[1]] %>%
       select(-one_of('exists')) %>% # Removing ud.exists variable
@@ -48,11 +58,9 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
 
     sentence_count <- max(ud$sentence_id) # Number of sentences in article
     actor_sentences <- unique(ud$sentence_id[ud$actor]) # Sentence ids of sentences mentioning actor
-    actor_start <- ud$start[ud$actor == T] # Udpipe token start positions for actor
-    actor_end <- ud$end[ud$actor == T] # Udpipe token end positions for actor
 
-    # Conducting regex filtering on matches only when actor type is Party
-    if (type == "Party") {
+    # Conducting regex filtering on matches only when there is a prefix and/or postfix to apply
+    if (!is.na(prefix) || prefix != '' || !is.na(postfix) || postfix != '') {
       ### If no pre or postfixes, match *not nothing* i.e. anything
       if (is.na(prefix) || prefix == '') {
         prefix = '$^'
@@ -60,14 +68,27 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
       if (is.na(postfix) || postfix == '') {
         postfix = '$^'
       }
-      sentence_ids <- lapply(actor_sentences, exceptionizer, ud = ud, doc = doc, markers = markers, regex_identifier = regex_identifier, prefix = prefix, postfix = postfix)
+      sentence_ids <- unlist(lapply(actor_sentences,
+                             exceptionizer,
+                             ud = ud,
+                             doc = doc,
+                             markers = markers,
+                             pre_tags_regex = pre_tags_regex,
+                             pre_tags = pre_tags,
+                             post_tags_regex = post_tags_regex,
+                             post_tags = post_tags,
+                             prefix = prefix,
+                             postfix = postfix))
     } else {
       sentence_ids <- actor_sentences
     }
 
     # Generating nested sentence start and end positions for actor sentences
     ud <- ud %>%
-      filter(sentence_id %in% sentence_ids) %>%
+      filter(sentence_id %in% sentence_ids)
+    actor_start <- ud$start[ud$actor == T] # Udpipe token start positions for actor
+    actor_end <- ud$end[ud$actor == T] # Udpipe token end positions for actor
+    ud <- ud %>%
       group_by(sentence_id) %>%
       summarise (
         sentence_start = as.integer(min(start)),
@@ -80,28 +101,42 @@ actorizer <- function(out, localhost = F, ids, type, prefix, postfix, identifier
         sentence_start = list(sentence_start),
         sentence_end = list(sentence_end)
       )
-
-    return(
-      data.frame(ud, # Sentence id, start and end position for actor sentences
-                 actor_start = I(list(actor_start)), # List of actor ud token start positions
-                 actor_end = I(list(actor_end)), # List of actor ud token end positions
-                 occ = length(unique(actor_sentences)), # Number of sentences in which actor occurs
-                 prom = length(unique(actor_sentences))/sentence_count, # Relative prominence of actor in article (number of occurences/total # sentences)
-                 rel_first = 1-(min(actor_sentences)/sentence_count), # Relative position of first occurence at sentence level
-                 first = min(actor_sentences), # First sentence in which actor is mentioned
-                 ids = I(list(ids)) # List of actor ids
+    if (length(ud$doc_id > 0)) {
+      return(
+        data.frame(ud, # Sentence id, start and end position for actor sentences
+                   actor_start = I(list(actor_start)), # List of actor ud token start positions
+                   actor_end = I(list(actor_end)), # List of actor ud token end positions
+                   occ = length(unique(sentence_ids)), # Number of sentences in which actor occurs
+                   prom = length(unique(sentence_ids))/sentence_count, # Relative prominence of actor in article (number of occurences/total # sentences)
+                   rel_first = 1-(min(sentence_ids)/sentence_count), # Relative position of first occurence at sentence level
+                   first = min(sentence_ids), # First sentence in which actor is mentioned
+                   ids = I(list(ids)) # List of actor ids
+        )
       )
-    )
+    } else {
+      return(NULL)
+    }
+
   }
   out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
-  offsetter <- function(x, identifier) {
-    return(x-((row(x)-1)*nchar(identifier)))
+  offsetter <- function(x, pre_tags, post_tags) {
+    return(x-((row(x)-1)*(nchar(pre_tags)+nchar(post_tags))))
   }
-  regex_identifier <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", identifier)
-  out$markers <- mclapply(str_locate_all(out$merged,coll(identifier)), offsetter, identifier = identifier, mc.cores = detectCores())
+  pre_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", pre_tags)
+  post_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", post_tags)
+  out$markers <- mclapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags, mc.cores = detectCores())
 
-  ids <- fromJSON(ids)
-  updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer, out = out, ids = ids, postfix = postfix, prefix=prefix, identifier=identifier, type = type, mc.cores = detectCores()))
+  # ids <- fromJSON(ids)
+  updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer,
+                                out = out,
+                                ids = ids,
+                                postfix = postfix,
+                                prefix=prefix,
+                                pre_tags_regex = pre_tags_regex,
+                                pre_tags = pre_tags,
+                                post_tags_regex = post_tags_regex,
+                                post_tags = post_tags,
+                                mc.cores = detectCores()))
   bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
   bulk <- c(bulk,apply(updates[c(1,11)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
   return(elastic_update(bulk, es_super = es_super, localhost = localhost))

@@ -68,11 +68,11 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
     }
   }
   json <- fromJSON(res)
-  if (json$hits$total == 0) {
+  if (json$hits$total$value == 0) {
     return(json)
   } else {
     out <-  jsonlite:::flatten(json$hits$hits)
-    total <- json$hits$total
+    total <- json$hits$total$value
     hits <- length(json$hits$hits)
     batch <- 1
     print(paste0('Processing documents ',batch*batch_size-batch_size,' through ',batch*batch_size,' out of ',total,' documents.'))
