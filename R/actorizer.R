@@ -137,7 +137,13 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
                                 post_tags_regex = post_tags_regex,
                                 post_tags = post_tags,
                                 mc.cores = detectCores()))
-  bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
-  bulk <- c(bulk,apply(updates[c(1,11)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
-  return(elastic_update(bulk, es_super = es_super, localhost = localhost))
+  if (nrow(updates) == 0) {
+    print("Nothing to update for this batch")
+    return(NULL)
+  } else {
+    bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
+    bulk <- c(bulk,apply(updates[c(1,11)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
+    return(elastic_update(bulk, es_super = es_super, localhost = localhost))
+  }
+
 }
