@@ -21,7 +21,7 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
     split <- markers[markers %in% seq(min, max, 1)] # Get markers in sentence
     min <- min+((nchar(pre_tags)+nchar(post_tags))*((match(split,markers))-1))
     max <- max+((nchar(pre_tags)+nchar(post_tags))*match(split,markers)) # Set end position to include markers (e.g if there are two markers of three characters in the sentence, the end position needs to be shifted by +6)
-    sentence <- str_sub(doc$merged, min, max) # Extract sentence from text
+    sentence <- paste0(' ',str_sub(doc$merged, min, max),' ') # Extract sentence from text, adding whitespaces before and after for double negation (i.e. Con only when preceded by "("))
 
     # Check if none of the regexes match, if so, return sentence id, otherwise (if one of the regexes match) return nothing
     if (!str_detect(sentence, paste0(post_tags_regex,'(',postfix,')')) && !str_detect(sentence, paste0('(',prefix,')',pre_tags_regex))) {
