@@ -29,7 +29,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                         }
                       ],
                       "must_not":[
-                        {"term":{"computerCodes.actors":"',actorid,'"}}
+                        {"term":{"computerCodes.actors.keyword":"',actorid,'"}}
                       ]
                     }
                   },
