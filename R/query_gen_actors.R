@@ -137,8 +137,9 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
     ids <- list(c(actor$`_source.actorId`,str_c(actor$`_source.partyId`,'_a')))
     actorid <- actor$`_source.actorId`
     query <- generator(country, actor$`_source.startDate`, actor$`_source.endDate`, query_string, pre_tags, post_tags, actorid)
-    return(data.frame(query = query, ids = I(ids), stringsAsFactors = F))
+    return(data.frame(query = query, ids = I(ids), prefix = NA, postfix = NA, stringsAsFactors = F))
   }
+
   ### Query generation for party searches
   if (actor$`_source.function` == "Party") {
     actor$`_source.startDate` <- "2000-01-01"
@@ -175,7 +176,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
       if (country == 'uk') {
         df2 <- data.frame(query = query, ids = I(ids), prefix = actor$`_source.notPrecededBy`, postfix = actor$`_source.notFollowedBy`, stringsAsFactors = F)
       } else {
-        df2 <- data.frame(query = query, ids = I(ids), stringsAsFactors = F)
+        df2 <- data.frame(query = query, ids = I(ids), prefix = NA, postfix = NA, stringsAsFactors = F)
       }
     }
     if (exists('df1') == T & exists('df2') == T) {

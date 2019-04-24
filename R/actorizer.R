@@ -13,7 +13,7 @@
 #' @export
 #' @examples
 #' actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super)
-actorizer <- function(out, localhost = F, ids, prefix, postfix, identifier, es_super, ver) {
+actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags, es_super, ver) {
   ### Function to filter out false positives using regex
   exceptionizer <- function(id, ud, doc, markers, pre_tags_regex, post_tags_regex,pre_tags,post_tags, prefix, postfix) {
     min <- min(ud$start[ud$sentence_id == id]) # Get start position of sentence

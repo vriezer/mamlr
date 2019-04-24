@@ -27,19 +27,19 @@ bulk_writer <- function(x, index = 'maml', varname, type, ver) {
   }
   if (varname == "ud") {
     return(
-      paste0('{"update": {"_index": "',index,'", "_type": "doc", "_id": "',x[1],'"}}
+      paste0('{"update": {"_index": "',index,'", "_type": "_doc", "_id": "',x[1],'"}}
 { "script" : { "source": "ctx._source.version = \\"',ver,'\\"; ctx._source.ud = params.code; ctx._source.remove(\\"tokens\\")", "lang" : "painless", "params": { "code": ',json,'}}}')
     )
   }
   if (type == 'set') {
     return(
-      paste0('{"update": {"_index": "',index,'", "_type": "doc", "_id": "',x[1],'"}}
+      paste0('{"update": {"_index": "',index,'", "_type": "_doc", "_id": "',x[1],'"}}
 { "script" : { "source": "ctx._source.version = \\"',ver,'\\"; if (ctx._source.computerCodes != null) {ctx._source.computerCodes.',varname,' = params.code} else {ctx._source.computerCodes = params.object}", "lang" : "painless", "params": { "code": ',json,', "object": {"',varname,'": ',json,'} }}}')
     )
   }
   if (type == "add") {
     return(
-      paste0('{"update": {"_index": "',index,'", "_type": "doc", "_id": "',x[1],'"}}
+      paste0('{"update": {"_index": "',index,'", "_type": "_doc", "_id": "',x[1],'"}}
         {"script": {"source": "ctx._source.version = \\"',ver,'\\"; if (ctx._source.computerCodes != null && ctx._source.computerCodes.containsKey(\\"',varname,'\\")) {ctx._source.computerCodes.',varname,'.addAll(params.code)} else if (ctx._source.computerCodes != null) {ctx._source.computerCodes.',varname,' = params.code} else {ctx._source.computerCodes = params.object}", "lang" : "painless", "params": { "code": ',json,' , "object": {"',varname,'": ',json,'}}}}'
       )
     )
