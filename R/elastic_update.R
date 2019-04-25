@@ -15,7 +15,7 @@
 elastic_update <- function(x, es_super = 'secret', localhost = T) {
   bulk <- paste0(paste0(x, collapse = '\n'),'\n')
   if (localhost == F) {
-    url <- paste0('https://super:',es_super,'@linux01.uis.no/es/_bulk?pretty&refresh=wait_for')
+    url <- paste0('https://super:',es_super,'@linux01.uis.no/es/_bulk?pretty')
   }
   if (localhost == T) {
     url <- 'http://localhost:9200/_bulk?pretty'
