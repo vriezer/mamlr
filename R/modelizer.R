@@ -227,15 +227,20 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
       pred <- predict(text_model, newdata = dfm_test, type = 'class')
 
       ### Fix for single-class 'predictions' in borderline situations
-      if (length(unique(pred)) == 1 & class_type == 'junk') {
-        if (unique(pred) == '0') {
-          pred[1] <- '1'
-        } else {
-          pred[1] <- '0'
-        }
-      }
+      # if (length(unique(pred)) == 1 & class_type == 'junk') {
+      #   if (unique(pred) == '0') {
+      #     pred[1] <- '1'
+      #   } else {
+      #     pred[1] <- '0'
+      #   }
+      # }
 
-      class_table <- table(prediction = pred, trueValues = docvars(dfm_test, class_type))
+      ### Fix for missing classes in multiclass classification
+      u <- union(pred, docvars(dfm_test, class_type))
+      t <- table(factor(predicted, u), factor(reference, u))
+      confusionMatrix(t)
+
+      class_table <- table(prediction = factor(pred, u), trueValues = factor(docvars(dfm_test, class_type), u))
       conf_mat <- confusionMatrix(class_table, mode = "everything")
       if (is.matrix(conf_mat$byClass) == T) {
         return(cbind(as.data.frame(t(conf_mat$overall)),as.data.frame(t(colMeans(conf_mat$byClass))),params))

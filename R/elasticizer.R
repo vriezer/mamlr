@@ -132,8 +132,10 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       }
     }
     if (length(update) > 0) {
+      scroll_clear(x = json$`_scroll_id`)
       return("Done updating")
     } else {
+      scroll_clear(x = json$`_scroll_id`)
       return(out)
     }
   }
