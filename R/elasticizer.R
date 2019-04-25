@@ -19,7 +19,6 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-### Just a bogus comment
 elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
@@ -133,10 +132,10 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       }
     }
     if (length(update) > 0) {
-      scroll_clear(x = json$`_scroll_id`)
+      scroll_clear(conn = conn, x = json$`_scroll_id`)
       return("Done updating")
     } else {
-      scroll_clear(x = json$`_scroll_id`)
+      scroll_clear(conn = conn, x = json$`_scroll_id`)
       return(out)
     }
   }
