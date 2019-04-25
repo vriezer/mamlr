@@ -7,6 +7,7 @@
 #' @param es_pwd The password for Elasticsearch read access
 #' @param batch_size Batch size
 #' @param max_batch Maximum number batches to retrieve
+#' @param time_scroll Time to keep the scroll instance open (defaults to 5m, with a maximum of 500 allowed instances, so a maximum of 100 per minute)
 #' @param update When set, indicates an update function to use on each batch of 1000 articles
 #' @param local Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)
 #' @param ... Parameters passed on to the update function
@@ -18,7 +19,7 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, update = NULL, localhost = F, ...){
+elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
@@ -42,9 +43,10 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               es_pwd = '',
               errors = 'complete')
     }
+    conn <- NULL
   } else {
     if (localhost == F) {
-      connect(port = 443,
+      conn <- connect(port = 443,
               transport = 'https',
               host = 'linux01.uis.no',
               path = 'es',
@@ -53,7 +55,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               errors = 'complete')
     }
     if (localhost == T){
-      connect(port = 9200,
+      conn <- connect(port = 9200,
               transport = 'http',
               host = 'localhost',
               path = '',
@@ -72,7 +74,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       }
       attempt <- attempt + 1
       try(
-        res <- Search(index = index, time_scroll="20m",body = query, size = batch_size, raw=T)
+        res <- Search(conn = conn, index = index, time_scroll=time_scroll,body = query, size = batch_size, raw=T)
       )
     }
   }
@@ -85,7 +87,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       }
       attempt <- attempt + 1
       try(
-        res <- Search(index = index, time_scroll="20m",body = query, size = batch_size, raw=T, source = F)
+        res <- Search(conn = conn, index = index, time_scroll=time_scroll,body = query, size = batch_size, raw=T, source = F)
       )
     }
   }
@@ -110,7 +112,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
         }
         attempt <- attempt + 1
         try(
-          res <- scroll(json$`_scroll_id`, time_scroll="20m", raw=T)
+          res <- scroll(conn = conn, json$`_scroll_id`, time_scroll=time_scroll, raw=T)
         )
       }
       json <- fromJSON(res)
