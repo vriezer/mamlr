@@ -93,6 +93,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
   }
   json <- fromJSON(res)
   if (json$hits$total$value == 0) {
+    scroll_clear(conn = conn, x = json$`_scroll_id`)
     return(json)
   } else {
     out <-  jsonlite:::flatten(json$hits$hits)
