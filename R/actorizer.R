@@ -60,12 +60,12 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
     actor_sentences <- unique(ud$sentence_id[ud$actor]) # Sentence ids of sentences mentioning actor
 
     # Conducting regex filtering on matches only when there is a prefix and/or postfix to apply
-    if (!is.na(prefix) || prefix != '' || !is.na(postfix) || postfix != '') {
+    if (!is.na(prefix) || !is.na(postfix)) {
       ### If no pre or postfixes, match *not nothing* i.e. anything
-      if (is.na(prefix) || prefix == '') {
+      if (is.na(prefix)) {
         prefix = '$^'
       }
-      if (is.na(postfix) || postfix == '') {
+      if (is.na(postfix)) {
         postfix = '$^'
       }
       sentence_ids <- unlist(lapply(actor_sentences,
@@ -122,6 +122,8 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
   offsetter <- function(x, pre_tags, post_tags) {
     return(x-((row(x)-1)*(nchar(pre_tags)+nchar(post_tags))))
   }
+  prefix[prefix==''] <- NA
+  postfix[postfix==''] <- NA
   pre_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", pre_tags)
   post_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", post_tags)
   out$markers <- mclapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags, mc.cores = detectCores())
