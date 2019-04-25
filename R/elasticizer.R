@@ -19,6 +19,7 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
+### Just a bogus comment
 elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
