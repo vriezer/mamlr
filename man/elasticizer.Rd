@@ -6,7 +6,8 @@
 \usage{
 elasticizer(query, src = T, index = "maml",
   es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024,
-  max_batch = Inf, update = NULL, localhost = F, ...)
+  max_batch = Inf, time_scroll = "5m", update = NULL,
+  localhost = F, ...)
 }
 \arguments{
 \item{query}{A JSON-formatted query in the Elasticsearch query DSL}
@@ -20,6 +21,8 @@ elasticizer(query, src = T, index = "maml",
 \item{batch_size}{Batch size}
 
 \item{max_batch}{Maximum number batches to retrieve}
+
+\item{time_scroll}{Time to keep the scroll instance open (defaults to 5m, with a maximum of 500 allowed instances, so a maximum of 100 per minute)}
 
 \item{update}{When set, indicates an update function to use on each batch of 1000 articles}
 

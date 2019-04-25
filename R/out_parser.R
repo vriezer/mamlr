@@ -4,6 +4,7 @@
 #' @param out The original output data frame
 #' @param field Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text
 #' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code)
+#' @param cores Number of cores to use for parallel processing, defaults to detectCores() (all cores available)
 #' @return a parsed output data frame including the additional column 'merged', containing the merged text
 #' @examples
 #' out_parser(out,field)
@@ -11,7 +12,7 @@
 #################################################################################################
 #################################### Parser function for output fields ##########################
 #################################################################################################
-out_parser <- function(out, field, clean = F) {
+out_parser <- function(out, field, clean = F, cores = detectCores()) {
   fncols <- function(data, cname) {
     add <-cname[!cname%in%names(data)]
 
@@ -80,7 +81,7 @@ out_parser <- function(out, field, clean = F) {
   if (Sys.info()[['sysname']] == "Windows") {
     cores <- 1
   } else {
-    cores <- detectCores()
+    cores <- cores
   }
   out <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_parser, out = out, clean = clean, field = field, mc.cores = cores))
 }

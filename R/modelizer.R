@@ -269,7 +269,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     select(percentiles: ncol(.))
 
   ## Estimate final model on whole dataset, using optimum final hyperparameters determined above
-  model_final <- classifier(NULL, outer_fold = NULL, params = optimum_final, dfm = dfm, class_type = class_type, model = model, cores_feats = detectCores())
+  model_final <- classifier(NULL, outer_fold = NULL, params = optimum_final, dfm = dfm, class_type = class_type, model = model, cores_feats = max(c(cores_feats,cores_grid,cores_inner,cores_outer)))
   rm(list=setdiff(ls(), c("model_final", "optimum_final","params_final","performance","grid","folds","folds_final","country","model","class_type","opt_measure")), envir = environment())
   save(list = ls(all.names = TRUE), file = paste0(getwd(),'/',country,'_',model,'_',class_type,'_',opt_measure,'_',Sys.time(),'.RData'), envir = environment())
   return(paste0(getwd(),'/',country,'_',model,'_',class_type,'_',opt_measure,'_',Sys.time(),'.RData'))

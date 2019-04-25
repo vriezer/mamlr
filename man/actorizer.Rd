@@ -4,8 +4,8 @@
 \alias{actorizer}
 \title{Updater function for elasticizer: Conduct actor searches}
 \usage{
-actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super,
-  ver)
+actorizer(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags,
+  es_super, ver, cores = detectCores())
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
@@ -18,11 +18,13 @@ actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super,
 
 \item{postfix}{Regex containing postfixes that should be excluded from hits}
 
-\item{identifier}{String used to mark highlights. Should be a lowercase string}
-
 \item{es_super}{Password for write access to ElasticSearch}
 
 \item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
+
+\item{cores}{Number of cores to use for parallel processing, defaults to cores (all cores available)}
+
+\item{identifier}{String used to mark highlights. Should be a lowercase string}
 }
 \value{
 As this is a nested function used within elasticizer, there is no return output

@@ -9,11 +9,12 @@
 #' @param identifier String used to mark highlights. Should be a lowercase string
 #' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
 #' @param es_super Password for write access to ElasticSearch
+#' @param cores Number of cores to use for parallel processing, defaults to cores (all cores available)
 #' @return As this is a nested function used within elasticizer, there is no return output
 #' @export
 #' @examples
 #' actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super)
-actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags, es_super, ver) {
+actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags, es_super, ver, cores = detectCores()) {
   ### Function to filter out false positives using regex
   exceptionizer <- function(id, ud, doc, markers, pre_tags_regex, post_tags_regex,pre_tags,post_tags, prefix, postfix) {
     min <- min(ud$start[ud$sentence_id == id]) # Get start position of sentence
@@ -118,7 +119,7 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
     }
 
   }
-  out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
+  out <- mamlr:::out_parser(out, field = 'highlight', clean = F, cores = cores)
   offsetter <- function(x, pre_tags, post_tags) {
     return(x-((row(x)-1)*(nchar(pre_tags)+nchar(post_tags))))
   }
@@ -126,7 +127,7 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
   postfix[postfix==''] <- NA
   pre_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", pre_tags)
   post_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", post_tags)
-  out$markers <- mclapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags, mc.cores = detectCores())
+  out$markers <- mclapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags, mc.cores = cores)
 
   # ids <- fromJSON(ids)
   updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer,
@@ -138,7 +139,7 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
                                 pre_tags = pre_tags,
                                 post_tags_regex = post_tags_regex,
                                 post_tags = post_tags,
-                                mc.cores = detectCores()))
+                                mc.cores = cores))
   if (nrow(updates) == 0) {
     print("Nothing to update for this batch")
     return(NULL)

@@ -5,6 +5,7 @@
 #' @param words String indicating the number of words to keep from each document (maximum document length), 999 indicates the whole document
 #' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags
 #' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code).
+#' @param cores Number of cores to use for parallel processing, defaults to cores (all cores available)
 #' @return A Quanteda dfm
 #' @export
 #' @examples
@@ -17,16 +18,16 @@
 
 # filter(`_source.codes.timeSpent` != -1) %>% ### Exclude Norwegian summer sample hack
 
-dfm_gen <- function(out, words = '999', text = "lemmas", clean) {
+dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = detectCores()) {
   # Create subset with just ids, codes and text
   out <- out %>%
     select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
   fields <- length(names(out))
   if (text == "lemmas" || text == 'ud' || text == 'ud_upos') {
-    out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, text = text, clean = clean, mc.cores = detectCores()))
+    out$merged <- unlist(mclapply(seq(1,length(out[[1]]),1),merger, out = out, text = text, clean = clean, mc.cores = cores))
   }
   if (text == "full") {
-    out <- mamlr:::out_parser(out, field = '_source' , clean = clean)
+    out <- mamlr:::out_parser(out, field = '_source' , clean = clean, cores = cores)
   }
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%
