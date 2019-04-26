@@ -237,8 +237,6 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
 
       ### Fix for missing classes in multiclass classification
       u <- union(pred, docvars(dfm_test, class_type))
-      t <- table(factor(predicted, u), factor(reference, u))
-      confusionMatrix(t)
 
       class_table <- table(prediction = factor(pred, u), trueValues = factor(docvars(dfm_test, class_type), u))
       conf_mat <- confusionMatrix(class_table, mode = "everything")
