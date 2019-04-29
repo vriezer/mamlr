@@ -136,7 +136,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                       str_c(actor$`_source.ministerName`,genitive)), collapse = ' ')
         query_string <- paste0(query_string,') OR (',lastname,' AND (',names,') AND (',unlist(minister),')))')
       } else if (country == "nl" | country == "be") { # If country is nl or be, add a requirement for Minister to the query
-        query_string <- paste0(query_string,') OR (',lastname,' AND (',names,') AND ("Minister" OR "minister")))')
+        query_string <- paste0(query_string,') OR (',lastname,' AND (',names,') AND (Minister OR minister)))')
       } else {
         query_string <- paste0(query_string,') OR (',lastname,' AND (',names,')))')
       }
