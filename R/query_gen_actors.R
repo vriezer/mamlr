@@ -63,7 +63,6 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
 
   ### Generating queries for individuals (ministers, PM, Party leaders and MPs)
   if (actor$`_source.function` == "Minister" | actor$`_source.function` == "PM" | actor$`_source.function` == "PartyLeader" | actor$`_source.function` == "MP") {
-    lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
     ## Adding a separate AND clause for inclusion of only last name to highlight all occurences of last name
     ## Regardless of whether the last name hit is because of a minister name or a full name proximity hit
 
@@ -87,6 +86,18 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                                ' ',
                                actor$`_source.lastName`,genitive,
                                '\\"~5) AND ',lastname)
+        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,' OR ',tolower(actor$`_source.lastName`),' OR ',tolower(actor$`_source.lastName`),genitive,')')
+      } else {
+        query_string <- paste0('(((\\"',
+                               actor$`_source.firstName`,
+                               ' ',
+                               actor$`_source.lastName`,
+                               '\\"~5 OR \\"',
+                               actor$`_source.firstName`,
+                               ' ',
+                               actor$`_source.lastName`,genitive,
+                               '\\"~5) AND ',lastname)
+        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
       }
     } else {
       query_string <- paste0('(((\\"',
@@ -98,6 +109,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                              ' ',
                              actor$`_source.lastName`,genitive,
                              '\\"~5) AND ',lastname)
+      lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
     }
 
 
@@ -123,15 +135,12 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                       str_c(str_to_title(actor$`_source.ministerName`),genitive),
                       str_c(actor$`_source.ministerName`,genitive)), collapse = ' ')
         query_string <- paste0(query_string,') OR (',lastname,' AND (',names,') AND (',unlist(minister),')))')
-      }
-      # If country is nl or be, add a requirement for Minister to the query
-      else if (country == "nl" | country == "be") {
+      } else if (country == "nl" | country == "be") { # If country is nl or be, add a requirement for Minister to the query
         query_string <- paste0(query_string,') OR (',lastname,' AND (',names,') AND ("Minister" OR "minister")))')
       } else {
         query_string <- paste0(query_string,') OR (',lastname,' AND (',names,')))')
       }
-    } else {
-      ### Else, generate search for first/last name only (MPs and Party leaders, currently)
+    } else { ### Else, generate search for first/last name only (MPs and Party leaders, currently)
       query_string <- paste0(query_string,'))')
     }
     ids <- list(c(actor$`_source.actorId`,str_c(actor$`_source.partyId`,'_a')))
