@@ -69,6 +69,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
     ### If country is belgium, check if there is an apostrophe in middlenames, if so, search for last name both with capitalized and lowercased last name
     if (country == 'be') {
       if (T %in% str_detect(actor$`_source.middleNames`,"'")) {
+        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,' OR ',tolower(actor$`_source.lastName`),' OR ',tolower(actor$`_source.lastName`),genitive,')')
         query_string <- paste0('(((\\"',
                                actor$`_source.firstName`,
                                ' ',
@@ -86,8 +87,8 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                                ' ',
                                actor$`_source.lastName`,genitive,
                                '\\"~5) AND ',lastname)
-        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,' OR ',tolower(actor$`_source.lastName`),' OR ',tolower(actor$`_source.lastName`),genitive,')')
       } else {
+        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
         query_string <- paste0('(((\\"',
                                actor$`_source.firstName`,
                                ' ',
@@ -97,9 +98,9 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                                ' ',
                                actor$`_source.lastName`,genitive,
                                '\\"~5) AND ',lastname)
-        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
       }
     } else {
+      lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
       query_string <- paste0('(((\\"',
                              actor$`_source.firstName`,
                              ' ',
@@ -109,7 +110,6 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                              ' ',
                              actor$`_source.lastName`,genitive,
                              '\\"~5) AND ',lastname)
-      lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
     }
 
 
