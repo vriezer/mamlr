@@ -158,6 +158,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     } else if (length(outer_fold) > 0 ) {
       dfm_train <- dfm[-outer_fold]
       dfm_test <- dfm[outer_fold]
+      validation_cv <- T
       # If only inner folds, validate performance directly on inner folds (is the same as above?)
     } else if (length(inner_fold) > 0 ) {
       dfm_train <- dfm[-inner_fold]
@@ -218,14 +219,21 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     #   nn_conf_mat <- confusionMatrix(class_table, mode = "everything")
     # }
     ### Add more if statements for different models
-    if (exists("final") == T) {
+    if (exists("final")) {
       return(text_model)
     } else {
       ### Removing all features not in training set from test set and weighting the remaining features according to training idf
       dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
       dfm_test <- custom_tfidf(dfm_test, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq[words])
       pred <- predict(text_model, newdata = dfm_test, type = 'class')
-
+      if (exists("validation_cv")) {
+        return(data.frame(
+          tv = docvars(dfm_test, class_type),
+          pred = pred,
+          params = params,
+          stringsAsFactors = F
+        ))
+      }
       ### Fix for single-class 'predictions' in borderline situations
       # if (length(unique(pred)) == 1 & class_type == 'junk') {
       #   if (unique(pred) == '0') {
@@ -252,8 +260,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
   folds <- generate_folds(outer_k,inner_k = inner_k, dfm = dfm, class_type = class_type)
 
   ## Get performance of each outer fold validation, and add row with mean scores (This is the final performance indicator)
-  performance <- bind_rows(mclapply(folds, outer_cv, grid=grid, dfm=dfm, class_type=class_type, model=model, cores_grid=cores_grid, cores_inner=cores_inner, cores_feats=cores_feats, mc.cores = cores_outer)) %>%
-    bind_rows(., colMeans(select(., 1:`Balanced Accuracy`)))
+  performance <- mclapply(folds, outer_cv, grid=grid, dfm=dfm, class_type=class_type, model=model, cores_grid=cores_grid, cores_inner=cores_inner, cores_feats=cores_feats, mc.cores = cores_outer)
 
   ## Set seed and generate folds for final hyperparameter optimization search (using CV)
   set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion")
