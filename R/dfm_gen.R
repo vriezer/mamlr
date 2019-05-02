@@ -32,9 +32,9 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = detectCo
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%
       mutate(junk = case_when(
-          .$codes == 2301 ~ 1,
-          .$codes == 3101 ~ 1,
-          .$codes == 34 ~ 1,
+          .$codes == 92 ~ 1,
+          .$codes == 91 ~ 1,
+          .$codes == 93 ~ 1,
           TRUE ~ 0
         )
       ) %>%
