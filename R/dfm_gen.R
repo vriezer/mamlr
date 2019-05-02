@@ -31,18 +31,13 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = detectCo
   }
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%
-      mutate(codes = case_when(
-        .$`_source.codes.timeSpent` == -1 ~ NA_character_,
-        TRUE ~ .$`_source.codes.majorTopic`
-      )
-      ) %>%
       mutate(junk = case_when(
-        .$codes == 2301 ~ 1,
-        .$codes == 3101 ~ 1,
-        .$codes == 34 ~ 1,
-        .$`_source.codes.timeSpent` == -1 ~ NA_real_,
-        TRUE ~ 0
-      )
+          .$codes == 2301 ~ 1,
+          .$codes == 3101 ~ 1,
+          .$codes == 34 ~ 1,
+          .$`_source.codes.timeSpent` == -1 ~ NA_real_,
+          TRUE ~ 0
+        )
       ) %>%
       mutate(aggregate = .$codes %>%
                str_pad(4, side="right", pad="a") %>%

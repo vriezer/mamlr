@@ -256,8 +256,15 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     }
   }
 
-  ## Generate nested CV folds, based on number of inner and outer folds defined (see start of script)
-  folds <- generate_folds(outer_k,inner_k = inner_k, dfm = dfm, class_type = class_type)
+  ### If outer_k is 1, do a holdout training run, with only cross-validation for parameter optimization, else, do nested CV
+  ### If holdout, training/test distribution is the same as for inner CV
+  if (outer_k == 1) {
+    outer_fold <- createDataPartition(as.factor(docvars(dfm, class_type)), p=1-(1/inner_k)*(inner_k-1))
+    folds <- lapply(outer_fold,inner_loop, dfm = dfm, inner_k = inner_k, class_type = class_type)
+  } else {
+    ## Generate nested CV folds, based on number of inner and outer folds defined (see start of script)
+    folds <- generate_folds(outer_k,inner_k = inner_k, dfm = dfm, class_type = class_type)
+  }
 
   ## Get performance of each outer fold validation, and add row with mean scores (This is the final performance indicator)
   performance <- mclapply(folds, outer_cv, grid=grid, dfm=dfm, class_type=class_type, model=model, cores_grid=cores_grid, cores_inner=cores_inner, cores_feats=cores_feats, mc.cores = cores_outer)

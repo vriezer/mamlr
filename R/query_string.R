@@ -12,7 +12,7 @@
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
 
-query_string <- function(query, fields = F, random = F) {
+query_string <- function(query, fields = F, random = F, default_operator = "AND") {
   if (typeof(fields) == 'logical') {
     fields <- '*'
   }
@@ -28,7 +28,7 @@ query_string <- function(query, fields = F, random = F) {
                   "query_string" : {
                       "default_field" : "text",
                       "query" : "',query,'",
-                      "default_operator": "AND",
+                      "default_operator": "',default_operator,'",
                       "allow_leading_wildcard" : false
                   }
                 }]
@@ -50,7 +50,7 @@ query_string <- function(query, fields = F, random = F) {
             "query_string" : {
                 "default_field" : "text",
                 "query" : "',query,'",
-                "default_operator": "AND",
+                "default_operator": "',default_operator,'",
                 "allow_leading_wildcard" : false
             }
           }]
