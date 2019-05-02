@@ -35,7 +35,6 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = detectCo
           .$codes == 2301 ~ 1,
           .$codes == 3101 ~ 1,
           .$codes == 34 ~ 1,
-          .$`_source.codes.timeSpent` == -1 ~ NA_real_,
           TRUE ~ 0
         )
       ) %>%
