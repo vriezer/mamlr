@@ -31,14 +31,15 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = detectCo
   }
   if ('_source.codes.majorTopic' %in% colnames(out)) {
     out <- out %>%
+      mutate(codes = .$`_source.codes.majorTopic`) %>%
       mutate(junk = case_when(
-          .$`_source.codes.majorTopic` == 92 ~ 1,
-          .$`_source.codes.majorTopic` == 91 ~ 1,
-          .$`_source.codes.majorTopic` == 93 ~ 1,
+          .$codes == 92 ~ 1,
+          .$codes == 91 ~ 1,
+          .$codes == 93 ~ 1,
           TRUE ~ 0
         )
       ) %>%
-      mutate(aggregate = .$`_source.codes.majorTopic` %>%
+      mutate(aggregate = .$codes %>%
                str_pad(4, side="right", pad="a") %>%
                str_match("([0-9]{1,2})?[0|a][1-9|a]") %>%
                .[,2] %>%
