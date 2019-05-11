@@ -4,7 +4,7 @@
 \alias{query_string}
 \title{Generate a query string query for ElasticSearch}
 \usage{
-query_string(query, fields = F, random = F)
+query_string(query, fields = F, random = F, default_operator = "AND")
 }
 \arguments{
 \item{query}{Query string in ElasticSearch query string format}
