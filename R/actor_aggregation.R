@@ -64,7 +64,7 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
     } else {
       query <- paste0('computerCodes.actors:(',paste(actorids, collapse = ' '),') && publication_date:[',actor$`_source.startDate`,' TO ',actor$`_source.endDate`,']')
     }
-
+    Sys.sleep(runif(1,0.1,0.3))
     out <- elasticizer(query_string(paste0('country:',actor$`_source.country`,' && ',query),
                                     fields = c('computerCodes.actorsDetail', 'doctype', 'publication_date'), default_operator = default_operator),
                        localhost = localhost,
