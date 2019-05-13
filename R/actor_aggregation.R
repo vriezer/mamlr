@@ -60,9 +60,9 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
       )
     }
     if (year > 0) {
-      query <- paste0('computerCodes.actors:(',paste(actorids, collapse = ' '),') && publication_date:[',year,'-01-01 TO ',year,'-12-31]')
+      query <- paste0('computerCodes.actors:(',paste(actorids, collapse = ' '),') && publication_date:[',year,'-01-01 TO ',year,'-12-31] && computerCodes.junk:0')
     } else {
-      query <- paste0('computerCodes.actors:(',paste(actorids, collapse = ' '),') && publication_date:[',actor$`_source.startDate`,' TO ',actor$`_source.endDate`,']')
+      query <- paste0('computerCodes.actors:(',paste(actorids, collapse = ' '),') && publication_date:[',actor$`_source.startDate`,' TO ',actor$`_source.endDate`,'] && computerCodes.junk:0')
     }
     out <- elasticizer(query_string(paste0('country:',actor$`_source.country`,' && ',query),
                                     fields = c('computerCodes.actorsDetail', 'doctype', 'publication_date'), default_operator = default_operator),
