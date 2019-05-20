@@ -83,26 +83,26 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
     } else {
       sentence_ids <- actor_sentences
     }
+    if (length(sentence_ids > 0)) {
+      # Generating nested sentence start and end positions for actor sentences
+      ud <- ud %>%
+        filter(sentence_id %in% sentence_ids)
+      actor_start <- ud$start[ud$actor == T] # Udpipe token start positions for actor
+      actor_end <- ud$end[ud$actor == T] # Udpipe token end positions for actor
+      ud <- ud %>%
+        group_by(sentence_id) %>%
+        summarise (
+          sentence_start = as.integer(min(start)),
+          sentence_end = as.integer(max(end)),
+          doc_id = first(doc_id)
+        ) %>%
+        group_by(doc_id) %>%
+        summarise(
+          sentence_id = list(as.integer(sentence_id)),
+          sentence_start = list(sentence_start),
+          sentence_end = list(sentence_end)
+        )
 
-    # Generating nested sentence start and end positions for actor sentences
-    ud <- ud %>%
-      filter(sentence_id %in% sentence_ids)
-    actor_start <- ud$start[ud$actor == T] # Udpipe token start positions for actor
-    actor_end <- ud$end[ud$actor == T] # Udpipe token end positions for actor
-    ud <- ud %>%
-      group_by(sentence_id) %>%
-      summarise (
-        sentence_start = as.integer(min(start)),
-        sentence_end = as.integer(max(end)),
-        doc_id = first(doc_id)
-      ) %>%
-      group_by(doc_id) %>%
-      summarise(
-        sentence_id = list(as.integer(sentence_id)),
-        sentence_start = list(sentence_start),
-        sentence_end = list(sentence_end)
-      )
-    if (length(ud$doc_id > 0)) {
       return(
         data.frame(ud, # Sentence id, start and end position for actor sentences
                    actor_start = I(list(actor_start)), # List of actor ud token start positions
