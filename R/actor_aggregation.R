@@ -23,6 +23,52 @@
 #################################### Aggregate actor results ################################
 #################################################################################################
 actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator = 'OR') {
+  ### Functions
+  aggregator <- function (id, duplicates) {
+    article <- filter(duplicates, `_id` == id) %>%
+      unnest(sentence_id, .preserve = colnames(.))
+
+    occ <- length(unlist(unique(article$sentence_id1)))
+    sentence_count <- round(article$occ[[1]]/article$prom[[1]])
+    prom <- occ/sentence_count
+    rel_first <- 1-(min(article$sentence_id1)/sentence_count)
+    return(bind_cols(as.list(article[1,1:6]), # Sentence id, start and end position for actor sentences
+                     data.frame(occ = I(list(occ)), # Number of sentences in which actor occurs
+                                prom = I(list(prom)), # Relative prominence of actor in article (number of occurences/total # sentences)
+                                rel_first = I(list(rel_first)), # Relative position of first occurence at sentence level
+                                first = I(list(min(article$sentence_id1))) # First sentence in which actor is mentioned
+                     )
+    )
+    )
+  }
+
+  ### Creating aggregate measuers at daily, weekly, monthly and yearly level
+  grouper <- function(level, actor_df, actorids) {
+    by_newspaper <- actor_df %>% group_by_at(vars(level, `_source.doctype`)) %>%
+      summarise(
+        occ = mean(unlist(occ)),
+        prom = mean(unlist(prom)),
+        rel_first = mean(unlist(rel_first)),
+        first = mean(unlist(first)),
+        articles = length(`_id`),
+        level = level
+      )
+
+    aggregate <- actor_df %>% group_by_at(vars(level)) %>%
+      summarise(
+        occ = mean(unlist(occ)),
+        prom = mean(unlist(prom)),
+        rel_first = mean(unlist(rel_first)),
+        first = mean(unlist(first)),
+        articles = length(`_id`),
+        `_source.doctype` = 'agg',
+        level = level
+      )
+    output <- bind_rows(by_newspaper, aggregate) %>%
+      bind_cols(.,bind_rows(actor)[rep(seq_len(nrow(bind_rows(actor))), each=nrow(.)),])
+    return(output)
+  }
+###########################################################################################
   actor <- actors[row,]
   if (actor$`_source.function` == "Party"){
     years = seq(2000,2019,1)
@@ -41,24 +87,6 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
   }
 
   actor_aggregator <- function(year, query, actor, actorids, default_operator, localhost = F, es_pwd) {
-    ### Functions
-    aggregator <- function (id, duplicates) {
-      article <- filter(duplicates, `_id` == id) %>%
-        unnest(sentence_id, .preserve = colnames(.))
-
-      occ <- length(unlist(unique(article$sentence_id1)))
-      sentence_count <- round(article$occ[[1]]/article$prom[[1]])
-      prom <- occ/sentence_count
-      rel_first <- 1-(min(article$sentence_id1)/sentence_count)
-      return(bind_cols(as.list(article[1,1:6]), # Sentence id, start and end position for actor sentences
-                       data.frame(occ = I(list(occ)), # Number of sentences in which actor occurs
-                                  prom = I(list(prom)), # Relative prominence of actor in article (number of occurences/total # sentences)
-                                  rel_first = I(list(rel_first)), # Relative position of first occurence at sentence level
-                                  first = I(list(min(article$sentence_id1))) # First sentence in which actor is mentioned
-                       )
-      )
-      )
-    }
     if (year > 0) {
       query <- paste0('computerCodes.actors:(',paste(actorids, collapse = ' '),') && publication_date:[',year,'-01-01 TO ',year,'-12-31] && computerCodes.junk:0')
     } else {
@@ -69,8 +97,9 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
                        localhost = localhost,
                        es_pwd = es_pwd)
     if (length(out$`_id`) > 0 ) {
+      actor_df <- out
       ### Generating actor dataframe, unnest by actorsDetail, then by actor ids. Filter out non-relevant actor ids.
-      actor_df <- out %>%
+      actor_df <- actor_df %>%
         unnest() %>%
         unnest(ids, .preserve = colnames(.)) %>%
         filter(ids1 %in% actorids) %>%
@@ -86,7 +115,6 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
         dupe_merged <- bind_rows(lapply(art_id, aggregator, duplicates = duplicates))
         actor_df <- bind_rows(dupe_merged, actor_single)
       }
-
       ### Creating date grouping variables
       actor_df <- actor_df %>%
         mutate(
@@ -95,34 +123,8 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
           yearmonthday = strftime(actor_df$`_source.publication_date`, format = '%Y%m%d'),
           yearweek = strftime(actor_df$`_source.publication_date`, format = "%Y%V")
         )
-      ### Creating aggregate measuers at daily, weekly, monthly and yearly level
-      grouper <- function(level) {
-        by_newspaper <- actor_df %>% group_by_at(vars(level, `_source.doctype`)) %>%
-          summarise(
-            occ = mean(unlist(occ)),
-            prom = mean(unlist(prom)),
-            rel_first = mean(unlist(rel_first)),
-            first = mean(unlist(first)),
-            articles = length(`_id`),
-            level = level
-          )
-
-        aggregate <- actor_df %>% group_by_at(vars(level)) %>%
-          summarise(
-            occ = mean(unlist(occ)),
-            prom = mean(unlist(prom)),
-            rel_first = mean(unlist(rel_first)),
-            first = mean(unlist(first)),
-            articles = length(`_id`),
-            `_source.doctype` = 'agg',
-            level = level
-          )
-        output <- bind_rows(by_newspaper, aggregate) %>%
-          bind_cols(.,bind_rows(actor)[rep(seq_len(nrow(bind_rows(actor))), each=nrow(.)),])
-        return(output)
-      }
       levels <- c('year','yearmonth','yearmonthday','yearweek')
-      aggregate_data <- bind_rows(lapply(levels, grouper))
+      aggregate_data <- bind_rows(lapply(levels, grouper, actor_df = actor_df, actorids = actorids))
       return(aggregate_data)
     } else {
       return()
