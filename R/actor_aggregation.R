@@ -72,10 +72,13 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
   actor <- actors[row,]
   if (actor$`_source.function` == "Party"){
     years = seq(2000,2019,1)
+    startDate <- '2000'
+    endDate <- '2019'
   } else {
     years = c(0)
+    startDate <- actor$`_source.startDate`
+    endDate <- actor$`_source.endDate`
   }
-
   if (actor$`_source.function` == 'Party' && actor$party_only == T) {
     actorids <- c(paste0(actor$`_source.partyId`,'_s'), paste0(actor$`_source.partyId`,'_f'))
   } else if (actor$`_source.function` == 'Party') {
@@ -130,8 +133,7 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
       return()
     }
   }
-
-  saveRDS(bind_rows(lapply(years, actor_aggregator, query, actor, actorids, default_operator, localhost, es_pwd)), file = paste0(actor$`_source.country`,'_',paste0(actorids,collapse = ''),'.Rds'))
+  saveRDS(bind_rows(lapply(years, actor_aggregator, query, actor, actorids, default_operator, localhost, es_pwd)), file = paste0(actor$`_source.country`,'_',paste0(actorids,collapse = ''),startDate,endDate,'.Rds'))
   print(paste0('Done with ',row,'/',nrow(actors),' actors'))
   return()
 }
