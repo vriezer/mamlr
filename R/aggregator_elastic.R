@@ -25,6 +25,7 @@
 #################################################################################################
 aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_super) {
   ### Generating actor dataframe, unnest by actorsDetail, then by actor ids. Filter out non-relevant actor ids.
+  partyid <- str_sub(actorids[1], end=-3)
   actor_df <- out %>%
     unnest() %>%
     unnest(ids, .preserve = colnames(.)) %>%
@@ -33,7 +34,7 @@ aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_supe
   agg_party_actors <- bind_rows(mclapply(unique(actor_df$`_id`),
                                          mamlr:::aggregator,
                                          actor_df = actor_df,
-                                         merge_id = paste0(actor$`_source.partyId`,'_mfsa'),
+                                         merge_id = paste0(partyid,'_mfsa'),
                                          mc.cores = cores))
 
   party <- actor_df %>%
@@ -41,7 +42,7 @@ aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_supe
   agg_party <- bind_rows(mclapply(unique(party$`_id`),
                                          mamlr:::aggregator,
                                          actor_df = party,
-                                         merge_id = paste0(actor$`_source.partyId`,'_mfs'),
+                                         merge_id = paste0(partyid,'_mfs'),
                                          mc.cores = cores))
 
   actors_only <- actor_df %>%
@@ -49,7 +50,7 @@ aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_supe
   agg_actors <- bind_rows(mclapply(unique(actors_only$`_id`),
                                   mamlr:::aggregator,
                                   actor_df = actors_only,
-                                  merge_id = paste0(actor$`_source.partyId`,'_ma'),
+                                  merge_id = paste0(partyid,'_ma'),
                                   mc.cores = cores))
   df_out <- bind_rows(agg_party_actors, agg_party, agg_actors)
   doc_ids <- df_out$doc_id
