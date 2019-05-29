@@ -31,7 +31,7 @@ aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_supe
     filter(ids1 %in% actorids)
 
   agg_party_actors <- bind_rows(mclapply(unique(actor_df$`_id`),
-                                         aggregator,
+                                         mamlr:::aggregator,
                                          actor_df = actor_df,
                                          merge_id = paste0(actor$`_source.partyId`,'_mfsa'),
                                          mc.cores = cores))
@@ -39,7 +39,7 @@ aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_supe
   party <- actor_df %>%
     filter(!endsWith(ids1, '_a'))
   agg_party <- bind_rows(mclapply(unique(party$`_id`),
-                                         aggregator,
+                                         mamlr:::aggregator,
                                          actor_df = party,
                                          merge_id = paste0(actor$`_source.partyId`,'_mfs'),
                                          mc.cores = cores))
@@ -47,7 +47,7 @@ aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_supe
   actors_only <- actor_df %>%
     filter(endsWith(ids1, '_a'))
   agg_actors <- bind_rows(mclapply(unique(actors_only$`_id`),
-                                  aggregator,
+                                  mamlr:::aggregator,
                                   actor_df = actors_only,
                                   merge_id = paste0(actor$`_source.partyId`,'_ma'),
                                   mc.cores = cores))
