@@ -15,15 +15,14 @@
 #' @param es_super Write password for ES
 #' @param actorids List of actorids used in the search, should be the same as the actorids used for elasticizer()
 #' @param ver String indicating the version of the update
-#' @param cores Numeric value indicating the number of cores to use for processing
 #' @return Return value is based on output of elastic_update()
 #' @export
 #' @examples
-#' aggregator_elastic(out, localhost = F, actorids, ver, cores, es_super)
+#' aggregator_elastic(out, localhost = F, actorids, ver, es_super)
 #################################################################################################
 #################################### Aggregate actor results ################################
 #################################################################################################
-aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_super) {
+aggregator_elastic <- function(out, localhost = F, actorids, ver, es_super) {
   ### Generating actor dataframe, unnest by actorsDetail, then by actor ids. Filter out non-relevant actor ids.
   partyid <- str_sub(actorids[1], end=-3)
   actor_df <- out %>%
@@ -31,27 +30,24 @@ aggregator_elastic <- function(out, localhost = F, actorids, ver, cores, es_supe
     unnest(ids, .preserve = colnames(.)) %>%
     filter(ids1 %in% actorids)
 
-  agg_party_actors <- bind_rows(mclapply(unique(actor_df$`_id`),
+  agg_party_actors <- bind_rows(lapply(unique(actor_df$`_id`),
                                          mamlr:::aggregator,
                                          actor_df = actor_df,
-                                         merge_id = paste0(partyid,'_mfsa'),
-                                         mc.cores = cores))
+                                         merge_id = paste0(partyid,'_mfsa')))
 
   party <- actor_df %>%
     filter(!endsWith(ids1, '_a'))
-  agg_party <- bind_rows(mclapply(unique(party$`_id`),
+  agg_party <- bind_rows(lapply(unique(party$`_id`),
                                          mamlr:::aggregator,
                                          actor_df = party,
-                                         merge_id = paste0(partyid,'_mfs'),
-                                         mc.cores = cores))
+                                         merge_id = paste0(partyid,'_mfs')))
 
   actors_only <- actor_df %>%
     filter(endsWith(ids1, '_a'))
-  agg_actors <- bind_rows(mclapply(unique(actors_only$`_id`),
+  agg_actors <- bind_rows(lapply(unique(actors_only$`_id`),
                                   mamlr:::aggregator,
                                   actor_df = actors_only,
-                                  merge_id = paste0(partyid,'_ma'),
-                                  mc.cores = cores))
+                                  merge_id = paste0(partyid,'_ma')))
   df_out <- bind_rows(agg_party_actors, agg_party, agg_actors)
   doc_ids <- df_out$doc_id
   df_out <- df_out %>%
