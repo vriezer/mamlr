@@ -19,6 +19,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                     {"bool": {
                       "filter":[
                         {"term":{"country":"',country,'"}},
+                        {"term":{"version":"agg_V1"}},
                         {"range":{"publication_date":{"gte":"',startdate,'","lte":"',enddate,'"}}},
                         {"query_string" : {
                           "default_operator" : "OR",

@@ -2,6 +2,8 @@
 
 export(actor_aggregation)
 export(actorizer)
+export(aggregator)
+export(aggregator_elastic)
 export(bulk_writer)
 export(class_update)
 export(dfm_gen)
