@@ -69,6 +69,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
     res <- NULL
     attempt <- 0
     while( is.null(res) && attempt <= retries ) {
+      print(paste0('Attempt ',attempt, ' out of ',retries))
       if (attempt > 0) {
         Sys.sleep(sleep)
       }
@@ -76,12 +77,14 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       try(
         res <- Search(conn = conn, index = index, time_scroll=time_scroll,body = query, size = batch_size, raw=T)
       )
+      print(paste0('Successful after ',attempt,' attempts'))
     }
   }
   if (src == F) {
     res <- NULL
     attempt <- 0
     while( is.null(res) && attempt <= retries ) {
+      print(paste0('Attempt ',attempt, ' out of ',retries))
       if (attempt > 0) {
         Sys.sleep(sleep)
       }
@@ -89,6 +92,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       try(
         res <- Search(conn = conn, index = index, time_scroll=time_scroll,body = query, size = batch_size, raw=T, source = F)
       )
+      print(paste0('Successful after ',attempt,' attempts'))
     }
   }
   json <- fromJSON(res)
@@ -108,6 +112,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       res <- NULL
       attempt <- 0
       while( is.null(res) && attempt <= retries ) {
+        print(paste0('Attempt ',attempt, ' out of ',retries))
         if (attempt > 0) {
           Sys.sleep(sleep)
         }
@@ -115,6 +120,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
         try(
           res <- scroll(conn = conn, json$`_scroll_id`, time_scroll=time_scroll, raw=T)
         )
+        print(paste0('Successful after ',attempt,' attempts'))
       }
       json <- fromJSON(res)
       hits <- length(json$hits$hits)
