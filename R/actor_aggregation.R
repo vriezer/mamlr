@@ -44,22 +44,32 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
 
   ### Creating aggregate measuers at daily, weekly, monthly and yearly level
   grouper <- function(level, actor_df, actorids) {
-    by_newspaper <- actor_df %>% group_by_at(vars(level, `_source.doctype`)) %>%
+    by_newspaper <- actor_df %>%
+      mutate(
+        sentence_count = round(unlist(occ)/unlist(prom))
+      ) %>%
+      group_by_at(vars(level, `_source.doctype`)) %>%
       summarise(
-        occ = mean(unlist(occ)),
-        prom = mean(unlist(prom)),
-        rel_first = mean(unlist(rel_first)),
+        occ = sum(unlist(occ)),
+        prom_art = mean(unlist(prom)),
+        rel_first_art = mean(unlist(rel_first)),
         first = mean(unlist(first)),
+        sentence_count = sum(sentence_count),
         articles = length(`_id`),
         level = level
       )
 
-    aggregate <- actor_df %>% group_by_at(vars(level)) %>%
+    aggregate <- actor_df %>%
+      mutate(
+        sentence_count = round(unlist(occ)/unlist(prom))
+      ) %>%
+      group_by_at(vars(level)) %>%
       summarise(
-        occ = mean(unlist(occ)),
-        prom = mean(unlist(prom)),
-        rel_first = mean(unlist(rel_first)),
+        occ = sum(unlist(occ)),
+        prom_art = mean(unlist(prom)),
+        rel_first_art = mean(unlist(rel_first)),
         first = mean(unlist(first)),
+        sentence_count = sum(sentence_count),
         articles = length(`_id`),
         `_source.doctype` = 'agg',
         level = level
@@ -133,7 +143,7 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
       return()
     }
   }
-  saveRDS(bind_rows(lapply(years, actor_aggregator, query, actor, actorids, default_operator, localhost, es_pwd)), file = paste0(actor$`_source.country`,'_',paste0(actorids,collapse = ''),startDate,endDate,'.Rds'))
+  saveRDS(bind_rows(lapply(years, actor_aggregator, query, actor, actorids, default_operator, localhost, es_pwd)), file = paste0(actor$`_source.country`,'_',paste0(actorids,collapse = ''),actor$`_source.function`,startDate,endDate,'.Rds'))
   print(paste0('Done with ',row,'/',nrow(actors),' actors'))
   return()
 }
