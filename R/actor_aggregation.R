@@ -31,14 +31,14 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
       summarise(
         `_source.doctype` = first(`_source.doctype`),
         `_source.publication_date` = first(`_source.publication_date`),
-        actor_end = list(sort(unique(unlist(actor_end)))),
+        # actor_end = list(sort(unique(unlist(actor_end)))),
         prom = list(length(unique(unlist(sentence_id)))/round(occ[[1]]/prom[[1]])),
         sentence_id = list(sort(unique(unlist(sentence_id)))),
         rel_first = list(max(unlist(rel_first))),
-        sentence_end = list(sort(unique(unlist(sentence_end)))),
-        actor_start = list(sort(unique(unlist(actor_start)))),
-        ids = list(sort(unique(unlist(ids)))),
-        sentence_start = list(sort(unique(unlist(sentence_start)))),
+        # sentence_end = list(sort(unique(unlist(sentence_end)))),
+        # actor_start = list(sort(unique(unlist(actor_start)))),
+        ids = list(unique(unlist(ids))),
+        # sentence_start = list(sort(unique(unlist(sentence_start)))),
         occ = list(length(unique(unlist(sentence_id)))),
         first = list(min(unlist(sentence_id)))
       )
@@ -179,6 +179,7 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
     return(output)
   }
   ###########################################################################################
+  plan(multiprocess, workers = cores)
   if (is.null(sent_dict) == F) {
     fields <- c('ud','computerCodes.actorsDetail', 'doctype', 'publication_date')
   } else {
@@ -239,13 +240,13 @@ actor_aggregation <- function(row, actors, es_pwd, localhost, default_operator =
         duplicates <- out[(duplicated(out$`_id`) | duplicated(out$`_id`, fromLast = T)),]
         actor_single <- out[!(duplicated(out$`_id`) | duplicated(out$`_id`, fromLast = T)),]
         art_id <- unique(duplicates$`_id`)
-        dupe_merged <- bind_rows(mclapply(art_id, aggregator, duplicates = duplicates, mc.cores = cores))
+        dupe_merged <- bind_rows(future_lapply(art_id, aggregator, duplicates = duplicates))
         out <- bind_rows(dupe_merged, actor_single)
       }
 
       if (is.null(sent_dict) == F) {
         out <- left_join(out, out_ud, by = '_id')
-        out <- bind_rows(mclapply(seq(1,nrow(out),1),par_sent, out = out, sent_dict = sent_dict, mc.cores = cores))
+        out <- bind_rows(future_lapply(seq(1,nrow(out),1),par_sent, out = out, sent_dict = sent_dict))
       }
 
       ### Creating date grouping variables

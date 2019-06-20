@@ -13,8 +13,9 @@ Depends: R (>= 3.3.1),
     caret,
     e1071,
     udpipe,
-    parallel,
-    SparseM
+    SparseM,
+    future,
+    future.apply
 License: Copyright Erik de Vries
 Encoding: UTF-8
 LazyData: true
