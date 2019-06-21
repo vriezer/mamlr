@@ -41,8 +41,8 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
         filter(upos != 'PUNCT') %>% # For getting proper word counts
         mutate(V1 = str_c(lemma,'_',upos)) %>%
         left_join(sent_dict, by = 'V1') %>%
-        ### Setting binary sentiment as unit of analysis
-        mutate(V2 = V3) %>%
+        # ### Setting binary sentiment as unit of analysis
+        # mutate(V2 = V3) %>%
         group_by(sentence_id) %>%
         mutate(
           V2 = case_when(
