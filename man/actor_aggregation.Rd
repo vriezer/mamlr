@@ -5,7 +5,7 @@
 \title{Generate aggregated actor measures from raw data}
 \usage{
 actor_aggregation(row, actors, es_pwd, localhost,
-  default_operator = "OR")
+  default_operator = "OR", sent_dict = NULL, cores = detectCores())
 }
 \arguments{
 \item{row}{The row of the actors data frame used for aggregation}
