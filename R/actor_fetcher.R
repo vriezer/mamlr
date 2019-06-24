@@ -75,7 +75,7 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
         out_row <- cbind(out_row, codes = codes_sent)
       }
     } else {
-      out_row <- unnest(out_row, `_source.computerCodes.actorsDetail`, .preserve = colnames(.))
+      out_row <- unnest(out_row, `_source.computerCodes.actorsDetail`, .preserve = colnames(out_row))
     }
     out_row <- out_row %>%
       mutate(
