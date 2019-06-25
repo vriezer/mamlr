@@ -37,6 +37,7 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
     ### Party ids including actors
     p_ids_a <- c(p_ids,str_c(pid,'_a'))
     summarizer <- function (p_ids, dupe_df, merged_id) {
+        id <- dupe_df$`_id`[[1]]
         dupe_df <- dupe_df %>%
           filter(ids %in% p_ids)
         if (nrow(dupe_df) > 0) {
@@ -58,7 +59,7 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
             )
           )
         } else {
-          print(dupe_df$`_id`[[1]])
+          print(id)
           return(NULL)
         }
     }
