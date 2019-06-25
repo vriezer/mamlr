@@ -59,7 +59,7 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
             )
           )
         } else {
-          print(id)
+          print(paste0('id:',id))
           return(NULL)
         }
     }
@@ -108,7 +108,8 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
 
     ### Get list of party ids occuring more than once in the document
     pids_table <- table(out_row$pids)
-    dupe_pids <- names(pids_table[pids_table > 1])
+    dupe_pids <- names(pids_table[pids_table > 1])%>%
+      str_subset(pattern = fixed('P_'))
     single_pids <- names(pids_table[pids_table <= 1]) %>%
       str_subset(pattern = fixed('P_'))
     ### Data frame containing only duplicate party ids
