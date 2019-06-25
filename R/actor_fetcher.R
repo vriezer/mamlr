@@ -39,20 +39,21 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
         select(-one_of('exists')) %>%
         unnest() %>%
         filter(upos != 'PUNCT') %>% # For getting proper word counts
-        mutate(V1 = str_c(lemma,'_',upos)) %>%
-        left_join(sent_dict, by = 'V1') %>%
+        mutate(lem_u = str_c(lemma,'_',upos)) %>%
+        left_join(sent_dict, by = 'lem_u') %>%
         # ### Setting binary sentiment as unit of analysis
-        # mutate(V2 = V3) %>%
+        # mutate(prox = V3) %>%
         group_by(sentence_id) %>%
         mutate(
-          V2 = case_when(
-            is.na(V2) == T ~ 0,
-            TRUE ~ V2
+          prox = case_when(
+            is.na(prox) == T ~ 0,
+            TRUE ~ prox
           )
         ) %>%
-        summarise(sent_sum = sum(V2),
+        summarise(sent_sum = sum(prox),
                   words = length(lemma),
-                  sent_words = length(na.omit(V3))) %>%
+                  sent_words = sum(prox != 0),
+                  sent_lemmas = list(lem_u[prox != 0])) %>%
         mutate(
           sent = sent_sum/words,
           arousal = sent_words/words
