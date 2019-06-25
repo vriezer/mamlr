@@ -36,26 +36,31 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
     p_ids <- c(str_c(pid,'_f'),str_c(pid,'_s'))
     ### Party ids including actors
     p_ids_a <- c(p_ids,str_c(pid,'_a'))
-    summarizer <- function (p_ids, out_row, merged_id) {
-      return(
-        out_row %>%
-          filter(ids %in% p_ids) %>%
-          summarise(
-            `_id` = first(`_id`),
-            `_source.doctype` = first(`_source.doctype`),
-            `_source.publication_date` = first(`_source.publication_date`),
-            prom = list(length(unique(unlist(sentence_id)))/round(occ[[1]]/prom[[1]])),
-            sentence_id = list(sort(unique(unlist(sentence_id)))),
-            rel_first = list(max(unlist(rel_first))),
-            ids = merged_id,
-            occ = list(length(unique(unlist(sentence_id)))),
-            first = list(min(unlist(sentence_id))),
-            actor_start = list(sort(unique(unlist(actor_start)))),
-            actor_end = list(sort(unique(unlist(actor_end)))),
-            sentence_start = list(sort(unique(unlist(sentence_start)))),
-            sentence_end = list(sort(unique(unlist(sentence_end))))
+    summarizer <- function (p_ids, dupe_df, merged_id) {
+        dupe_df <- dupe_df %>%
+          filter(ids %in% p_ids)
+        if (nrow(dupe_df) > 0) {
+          return(
+            dupe_df %>% summarise(
+              `_id` = first(`_id`),
+              `_source.doctype` = first(`_source.doctype`),
+              `_source.publication_date` = first(`_source.publication_date`),
+              prom = list(length(unique(unlist(sentence_id)))/round(occ[[1]]/prom[[1]])),
+              sentence_id = list(sort(unique(unlist(sentence_id)))),
+              rel_first = list(max(unlist(rel_first))),
+              ids = merged_id,
+              occ = list(length(unique(unlist(sentence_id)))),
+              first = list(min(unlist(sentence_id))),
+              actor_start = list(sort(unique(unlist(actor_start)))),
+              actor_end = list(sort(unique(unlist(actor_end)))),
+              sentence_start = list(sort(unique(unlist(sentence_start)))),
+              sentence_end = list(sort(unique(unlist(sentence_end))))
+            )
           )
-      )
+        } else {
+          print(dupe_df$`_id`[[1]])
+          return(NULL)
+        }
     }
     party <- summarizer(p_ids, dupe_df, str_c(pid,'_mfs'))
     party_actor <- summarizer(p_ids_a, dupe_df, str_c(pid,'_mfsa'))
