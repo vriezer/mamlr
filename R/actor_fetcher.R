@@ -31,9 +31,40 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
     return(cbind(out_row[row,],data.frame(actor = actor)))
   }
 
+  aggregator <- function (pid, dupe_df) {
+    ### Party ids excluding actors
+    p_ids <- c(str_c(pid,'_f'),str_c(pid,'_s'))
+    ### Party ids including actors
+    p_ids_a <- c(p_ids,str_c(pid,'_a'))
+    summarizer <- function (p_ids, out_row, merged_id) {
+      return(
+        out_row %>%
+          filter(ids %in% p_ids) %>%
+          summarise(
+            `_id` = first(`_id`),
+            `_source.doctype` = first(`_source.doctype`),
+            `_source.publication_date` = first(`_source.publication_date`),
+            prom = list(length(unique(unlist(sentence_id)))/round(occ[[1]]/prom[[1]])),
+            sentence_id = list(sort(unique(unlist(sentence_id)))),
+            rel_first = list(max(unlist(rel_first))),
+            ids = merged_id,
+            occ = list(length(unique(unlist(sentence_id)))),
+            first = list(min(unlist(sentence_id))),
+            actor_start = list(sort(unique(unlist(actor_start)))),
+            actor_end = list(sort(unique(unlist(actor_end)))),
+            sentence_start = list(sort(unique(unlist(sentence_start)))),
+            sentence_end = list(sort(unique(unlist(sentence_end))))
+          )
+      )
+    }
+    party <- summarizer(p_ids, dupe_df, str_c(pid,'_mfs'))
+    party_actor <- summarizer(p_ids_a, dupe_df, str_c(pid,'_mfsa'))
+    return(bind_rows(party,party_actor))
+  }
+
   par_sent <- function(row, out, sent_dict = NULL) {
     out_row <- out[row,]
-    ### Generating actor dataframe, unnest by actorsDetail, then by actor ids. Filter out non-relevant actor ids.
+    ### Generating sentence-level sentiment scores from ud
     if (is.null(sent_dict) == F) {
       ud_sent <- out_row$`_source.ud`[[1]] %>%
         select(-one_of('exists')) %>%
@@ -58,8 +89,51 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
           sent = sent_sum/words,
           arousal = sent_words/words
         )
-      out_row <- select(out_row, -`_source.ud`) %>%
-        unnest(`_source.computerCodes.actorsDetail`, .preserve = colnames(.))
+    }
+    ### Unnest out_row to individual actor ids
+    out_row <- select(out_row, -`_source.ud`) %>%
+      unnest(`_source.computerCodes.actorsDetail`, .preserve = colnames(.)) %>%
+      unnest(ids, .preserve = colnames(.)) %>%
+      select(-ids) %>%
+      rename(ids = ids1) %>%
+      mutate(
+        pids = str_sub(ids, start = 1, end = -3)
+      )
+
+    ### Get list of party ids occuring more than once in the document
+    pids_table <- table(out_row$pids)
+    dupe_pids <- names(pids_table[pids_table > 1])
+    single_pids <- names(pids_table[pids_table <= 1]) %>%
+      str_subset(pattern = fixed('P_'))
+    ### Data frame containing only duplicate party ids
+    dupe_df <- out_row %>%
+      filter(pids %in% dupe_pids)
+    ### Data frame containing only single party ids
+    single_df <- out_row %>%
+      filter(pids %in% single_pids)
+
+    ### Data frame for single occurrence mfsa
+    single_party_actor <- single_df %>%
+      mutate(
+        ids = str_c(pids,'_mfsa')
+      )
+    ### Data frame for single occurence mfs
+    single_party <- single_df %>%
+      filter(!endsWith(ids, '_a')) %>%
+      mutate(
+        ids = str_c(pids,'_mfs')
+      )
+    out_row <- out_row %>%
+      filter(startsWith(ids,'A_')) %>%
+      bind_rows(., single_party, single_party_actor)
+    ### For each of the party ids in the list above, aggregate to _mfs and _mfsa
+    if (length(dupe_pids) > 0) {
+      aggregate <- bind_rows(lapply(dupe_pids, aggregator, dupe_df = dupe_df))
+      out_row <- bind_rows(out_row, aggregate)
+    }
+
+    ### Generating sentiment scores for article and actors
+    if (is.null(sent_dict) == F) {
       ### Aggregated sentiment per article (over all sentences in article)
       text_sent <- summarise(ud_sent,
                              sent = sum(sent_sum)/sum(words),
@@ -75,8 +149,6 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
           select(-sentence_id)
         out_row <- cbind(out_row, codes = codes_sent)
       }
-    } else {
-      out_row <- unnest(out_row, `_source.computerCodes.actorsDetail`, .preserve = colnames(out_row))
     }
     out_row <- out_row %>%
       mutate(
@@ -88,7 +160,8 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
       select(-`_source.computerCodes.actorsDetail`,
              -`_score`,
              -`_index`,
-             -`_type`)
+             -`_type`,
+             -pids)
     return(out_row)
   }
   saveRDS(bind_rows(future_lapply(1:nrow(out), par_sent, out = out, sent_dict = sent_dict)), file = paste0('df_out',as.numeric(as.POSIXct(Sys.time())),'.Rds'))
