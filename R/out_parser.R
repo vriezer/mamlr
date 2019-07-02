@@ -12,7 +12,8 @@
 #################################################################################################
 #################################### Parser function for output fields ##########################
 #################################################################################################
-out_parser <- function(out, field, clean = F, cores = detectCores()) {
+out_parser <- function(out, field, clean = F, cores = 1) {
+  plan(multiprocess, workers = cores)
   fncols <- function(data, cname) {
     add <-cname[!cname%in%names(data)]
 
@@ -78,10 +79,5 @@ out_parser <- function(out, field, clean = F, cores = detectCores()) {
       {if(clean == T) str_replace_all(.,"\\S*?[0-9@#$%]+([^\\s!?.,;:]|[!?.,:;]\\S)*", "")  else . }
     return(doc)
   }
-  if (Sys.info()[['sysname']] == "Windows") {
-    cores <- 1
-  } else {
-    cores <- cores
-  }
-  out <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_parser, out = out, clean = clean, field = field, mc.cores = cores))
+  out <- bind_rows(future_lapply(seq(1,length(out[[1]]),1), par_parser, out = out, clean = clean, field = field))
 }

@@ -14,7 +14,8 @@
 #' @export
 #' @examples
 #' actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super)
-actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags, es_super, ver, cores = detectCores()) {
+actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags, es_super, ver, cores = 1) {
+  plan(multiprocess, workers = cores)
   ### Function to filter out false positives using regex
   exceptionizer <- function(id, ud, doc, markers, pre_tags_regex, post_tags_regex,pre_tags,post_tags, prefix, postfix) {
     min <- min(ud$start[ud$sentence_id == id]) # Get start position of sentence
@@ -127,10 +128,10 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
   postfix[postfix==''] <- NA
   pre_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", pre_tags)
   post_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", post_tags)
-  out$markers <- mclapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags, mc.cores = cores)
+  out$markers <- future_lapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags)
 
   # ids <- fromJSON(ids)
-  updates <- bind_rows(mclapply(seq(1,length(out[[1]]),1), sentencizer,
+  updates <- bind_rows(future_lapply(seq(1,length(out[[1]]),1), sentencizer,
                                 out = out,
                                 ids = ids,
                                 postfix = postfix,
@@ -138,8 +139,7 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
                                 pre_tags_regex = pre_tags_regex,
                                 pre_tags = pre_tags,
                                 post_tags_regex = post_tags_regex,
-                                post_tags = post_tags,
-                                mc.cores = cores))
+                                post_tags = post_tags))
   if (nrow(updates) == 0) {
     print("Nothing to update for this batch")
     return(NULL)

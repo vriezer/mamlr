@@ -50,6 +50,11 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                 }
               }'))
   }
+  prox_gen <- function(row, grid) {
+    return(
+      paste0('\\"',grid[row,]$first,' ',grid[row,]$last,'\\"~',grid[row,]$prox)
+    )
+  }
   ### Setting linguistic forms for each country ###
   if (country == "no" | country == "dk") {
     genitive <- 's'
@@ -67,78 +72,56 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
     ## Regardless of whether the last name hit is because of a minister name or a full name proximity hit
 
     ### If country is belgium, check if there is an apostrophe in middlenames, if so, search for last name both with capitalized and lowercased last name
-    if (country == 'be') {
-      if (T %in% str_detect(actor$`_source.middleNames`,"'")) {
-        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,' OR ',tolower(actor$`_source.lastName`),' OR ',tolower(actor$`_source.lastName`),genitive,')')
-        query_string <- paste0('(((\\"',
-                               actor$`_source.firstName`,
-                               ' ',
-                               actor$`_source.lastName`,
-                               '\\"~5 OR \\"',
-                               actor$`_source.firstName`,
-                               ' ',
-                               tolower(actor$`_source.lastName`),
-                               '\\"~5 OR \\"',
-                               actor$`_source.firstName`,
-                               ' ',
-                               tolower(actor$`_source.lastName`),genitive,
-                               '\\"~5 OR \\"',
-                               actor$`_source.firstName`,
-                               ' ',
-                               actor$`_source.lastName`,genitive,
-                               '\\"~5) AND ',lastname)
-      } else {
-        lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
-        query_string <- paste0('(((\\"',
-                               actor$`_source.firstName`,
-                               ' ',
-                               actor$`_source.lastName`,
-                               '\\"~5 OR \\"',
-                               actor$`_source.firstName`,
-                               ' ',
-                               actor$`_source.lastName`,genitive,
-                               '\\"~5) AND ',lastname)
-      }
+    if (country == 'be' && T %in% str_detect(actor$`_source.middleNames`,"'")) {
+      last_list <- c(actor$`_source.lastName`, str_c(actor$`_source.lastName`,genitive), tolower(actor$`_source.lastName`), str_c(tolower(actor$`_source.lastName`),genitive))
+      grid <- crossing(first = actor$`_source.firstName`, last = last_list, prox = 5)
+      fullname <- lapply(1:nrow(grid), prox_gen, grid = grid)
+      query_string <- paste0('((',
+                             paste0(unlist(fullname), collapse = ' OR '),') AND ',
+                             paste0('(',paste0(unlist(last_list), collapse = ' OR '),')'))
     } else {
-      lastname <- paste0('(',actor$`_source.lastName`,' OR ',actor$`_source.lastName`,genitive,')')
-      query_string <- paste0('(((\\"',
-                             actor$`_source.firstName`,
-                             ' ',
-                             actor$`_source.lastName`,
-                             '\\"~5 OR \\"',
-                             actor$`_source.firstName`,
-                             ' ',
-                             actor$`_source.lastName`,genitive,
-                             '\\"~5) AND ',lastname)
+      last_list <- c(actor$`_source.lastName`, str_c(actor$`_source.lastName`,genitive))
+      grid <- crossing(first = actor$`_source.firstName`, last = last_list, prox = 5)
+      fullname <- lapply(1:nrow(grid), prox_gen, grid = grid)
+      query_string <- paste0('((',
+                             paste0(unlist(fullname), collapse = ' OR '),') AND ',
+                             paste0('(',paste0(unlist(last_list), collapse = ' OR '),')'))
     }
-
 
     ### If actor is a minister, generate minister search
     if (actor$`_source.function` == "Minister" | actor$`_source.function` == "PM") {
-      capital <- unlist(lapply(actor$`_source.ministerSearch`, str_to_title))
-      capital_gen <- unlist(lapply(capital, str_c, genitive))
-      gen <- unlist(lapply(actor$`_source.ministerSearch`, str_c, genitive))
-      # If country is no or dk, search for definitive minister forms as well (including genitive forms)
+      # If country is no or dk, search for minister policy names (eg likestillingsminister) in both undefined, defined and genitive forms
       if (country == "no" || country == "dk") {
+        capital <- unlist(lapply(actor$`_source.ministerSearch`, str_to_title))
+        capital_gen <- unlist(lapply(capital, str_c, genitive))
+        gen <- unlist(lapply(actor$`_source.ministerSearch`, str_c, genitive))
         capital_def <- unlist(lapply(capital, str_c, definitive))
         capital_defgen <- unlist(lapply(capital, str_c, definitive_genitive))
         def <- unlist(lapply(actor$`_source.ministerSearch`, str_c, definitive))
         defgen <- unlist(lapply(actor$`_source.ministerSearch`, str_c, definitive_genitive))
-        names <- paste(c(capital,capital_gen,gen,capital_def,def,defgen,capital_defgen), collapse = ' ')
-      } else {
-        names <- paste(c(capital,capital_gen,gen,actor$`_source.ministerSearch`), collapse = ' ')
+        names <- paste(unlist(c(capital,capital_gen,gen,capital_def,def,defgen,capital_defgen)), collapse = '\\" \\"')
+        query_string <- paste0(query_string,') OR (',lastname,' AND (\\"',unlist(names),'\\")))')
       }
-      # If country is uk, search for last name, minister names and minister titles (i.e. Johnson AND state AND secretary)
+      # If country is uk, search for last name and minister name in proximity (e.g "secretary Johnson"~5)
       if (country == "uk") {
-        minister <- paste(c(str_to_title(actor$`_source.ministerName`),
+        minister <- c(str_to_title(actor$`_source.ministerName`),
                       actor$`_source.ministerName`,
                       str_c(str_to_title(actor$`_source.ministerName`),genitive),
-                      str_c(actor$`_source.ministerName`,genitive)), collapse = ' ')
-        query_string <- paste0(query_string,') OR (',lastname,' AND (',names,') AND (',unlist(minister),')))')
-      } else if (country == "nl" | country == "be") { # If country is nl or be, add a requirement for Minister to the query
-        query_string <- paste0(query_string,') OR (',lastname,' AND (',names,') AND (Minister OR minister)))')
-      } else {
-        query_string <- paste0(query_string,') OR (',lastname,' AND (',names,')))')
+                      str_c(actor$`_source.ministerName`,genitive))
+        grid <- crossing(first = actor$`_source.lastName`, last = minister, prox = 5)
+        ministername <- lapply(1:nrow(grid), prox_gen, grid = grid)
+        query_string <- paste0(query_string,') OR (',
+                               paste0(unlist(ministername), collapse= ' OR '),')')
+      }
+      if (country == "nl" | country == "be") { # If country is nl or be, add a requirement for Minister to the query
+        minister <- c('Minister',
+                      'minister',
+                      str_c('Minister',genitive),
+                      str_c('minister',genitive))
+        grid <- crossing(first = actor$`_source.lastName`, last = minister, prox = 5)
+        ministername <- lapply(1:nrow(grid), prox_gen, grid = grid)
+        query_string <- paste0(query_string,') OR (',
+                               paste0(unlist(ministername), collapse= ' OR '),')')
       }
     } else { ### Else, generate search for first/last name only (MPs and Party leaders, currently)
       query_string <- paste0(query_string,'))')
@@ -157,15 +140,15 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
       # If uk, no or dk, search for both regular abbreviations, and genitive forms
       if (country == "uk" | country == "no" | country == "dk") {
         gen <- unlist(lapply(actor$`_source.partyNameSearchShort`, str_c, genitive))
-        names <- paste(c(gen,actor$`_source.partyNameSearchShort`), collapse = '\\\" \\\"')
+        names <- paste(unlist(c(gen,actor$`_source.partyNameSearchShort`)), collapse = '\\" \\"')
       } else {
-        names <- paste(actor$`_source.partyNameSearchShort`, collapse = '\\\" \\\"')
+        names <- paste(unlist(actor$`_source.partyNameSearchShort`), collapse = '\\" \\"')
       }
       # If no or dk, only keep genitive forms if the party abbreviation is longer than 1 character (2 including the genitive s itself)
       if (country == "dk" | country == "no") {
         gen <- gen[which(nchar(gen) > 2)]
       }
-      query_string <- paste0('(\\\"',names,'\\\")')
+      query_string <- paste0('(\\"',unlist(names),'\\")')
       ids <- str_c(actor$`_source.partyId`,'_s')
       actorid <- str_c(actor$`_source.partyId`,'_s')
       query <- generator(country, actor$`_source.startDate`, actor$`_source.endDate`, query_string, pre_tags, post_tags, actorid)
@@ -174,11 +157,11 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
     if (nchar(actor$`_source.partyNameSearch`[[1]]) > 0) {
       if (country == "uk" | country == "no" | country == "dk") {
         gen <- unlist(lapply(actor$`_source.partyNameSearch`, str_c, genitive))
-        names <- paste(c(gen,actor$`_source.partyNameSearch`), collapse = '\\\" \\\"')
+        names <- paste(unlist(c(gen,actor$`_source.partyNameSearch`)), collapse = '\\" \\"')
       } else {
-        names <- paste(actor$`_source.partyNameSearch`, collapse = '\\\" \\\"')
+        names <- paste(unlist(actor$`_source.partyNameSearch`), collapse = '\\" \\"')
       }
-      query_string <- paste0('(\\\"',names,'\\\")')
+      query_string <- paste0('(\\"',unlist(names),'\\")')
       ids <- str_c(actor$`_source.partyId`,'_f')
       actorid <- str_c(actor$`_source.partyId`,'_f')
       query <- generator(country, actor$`_source.startDate`, actor$`_source.endDate`, query_string, pre_tags, post_tags, actorid)
