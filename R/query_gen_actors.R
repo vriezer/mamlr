@@ -99,8 +99,8 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
         capital_defgen <- unlist(lapply(capital, str_c, definitive_genitive))
         def <- unlist(lapply(actor$`_source.ministerSearch`, str_c, definitive))
         defgen <- unlist(lapply(actor$`_source.ministerSearch`, str_c, definitive_genitive))
-        names <- paste(unlist(c(capital,capital_gen,gen,capital_def,def,defgen,capital_defgen)), collapse = '\\" \\"')
-        query_string <- paste0(query_string,') OR (',lastname,' AND (\\"',unlist(names),'\\")))')
+        names <- paste(unlist(c(capital,capital_gen,gen,capital_def,def,defgen,capital_defgen)), collapse = '\\" OR \\"')
+        query_string <- paste0(query_string,') OR (',paste0(unlist(last_list), collapse = ' OR '),' AND (\\"',unlist(names),'\\"))')
       }
       # If country is uk, search for last name and minister name in proximity (e.g "secretary Johnson"~5)
       if (country == "uk") {
