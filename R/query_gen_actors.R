@@ -124,7 +124,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                                paste0(unlist(ministername), collapse= ' OR '),')')
       }
     } else { ### Else, generate search for first/last name only (MPs and Party leaders, currently)
-      query_string <- paste0(query_string,'))')
+      query_string <- paste0(query_string,')')
     }
     ids <- list(c(actor$`_source.actorId`,str_c(actor$`_source.partyId`,'_a')))
     actorid <- actor$`_source.actorId`
