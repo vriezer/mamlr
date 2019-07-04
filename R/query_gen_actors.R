@@ -59,7 +59,6 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
   if (country == "no" | country == "dk") {
     genitive <- 's'
     definitive <- 'en'
-    definitive_genitive <- 'ens'
   } else if (country == 'uk') {
     genitive <- '\'s'
   } else if (country == 'nl' | country == 'be') {
@@ -90,39 +89,37 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
 
     ### If actor is a minister, generate minister search
     if (actor$`_source.function` == "Minister" | actor$`_source.function` == "PM") {
-      # If country is no or dk, search for minister policy names (eg likestillingsminister) in both undefined, defined and genitive forms
       if (country == "no" || country == "dk") {
-        capital <- unlist(lapply(actor$`_source.ministerSearch`, str_to_title))
-        capital_gen <- unlist(lapply(capital, str_c, genitive))
-        gen <- unlist(lapply(actor$`_source.ministerSearch`, str_c, genitive))
-        capital_def <- unlist(lapply(capital, str_c, definitive))
-        capital_defgen <- unlist(lapply(capital, str_c, definitive_genitive))
-        def <- unlist(lapply(actor$`_source.ministerSearch`, str_c, definitive))
-        defgen <- unlist(lapply(actor$`_source.ministerSearch`, str_c, definitive_genitive))
-        names <- paste(unlist(c(capital,capital_gen,gen,capital_def,def,defgen,capital_defgen)), collapse = '\\" OR \\"')
-        query_string <- paste0(query_string,') OR (',paste0(unlist(last_list), collapse = ' OR '),' AND (\\"',unlist(names),'\\"))')
+        minister <- str_split(actor$`_source.ministerSearch`, pattern = '-| ') %>%
+          map(1)
+
+        capital <- unlist(str_to_title(minister))
+        capital_def <- unlist(str_c(capital, definitive))
+        def <- unlist(str_c(minister,definitive))
+        minister <- unlist(c(minister,capital,capital_def,def))
       }
-      # If country is uk, search for last name and minister name in proximity (e.g "secretary Johnson"~5)
       if (country == "uk") {
         minister <- c(str_to_title(actor$`_source.ministerName`),
-                      actor$`_source.ministerName`,
-                      str_c(str_to_title(actor$`_source.ministerName`),genitive),
-                      str_c(actor$`_source.ministerName`,genitive))
-        grid <- crossing(first = actor$`_source.lastName`, last = minister, prox = 5)
-        ministername <- lapply(1:nrow(grid), prox_gen, grid = grid)
-        query_string <- paste0(query_string,') OR (',
-                               paste0(unlist(ministername), collapse= ' OR '),')')
+                        actor$`_source.ministerName`)
+        if(actor$`_source.function` == "PM") {
+          minister <- c(minister,
+                        "PM")
+        }
       }
       if (country == "nl" | country == "be") { # If country is nl or be, add a requirement for Minister to the query
-        minister <- c('Minister',
-                      'minister',
-                      str_c('Minister',genitive),
-                      str_c('minister',genitive))
-        grid <- crossing(first = actor$`_source.lastName`, last = minister, prox = 5)
-        ministername <- lapply(1:nrow(grid), prox_gen, grid = grid)
-        query_string <- paste0(query_string,') OR (',
-                               paste0(unlist(ministername), collapse= ' OR '),')')
+        minister <- c("Minister",
+                      "minister")
+        if(actor$`_source.function` == "PM") {
+          minister <- c(minister,
+                        "Premier",
+                        "premier")
+        }
       }
+      grid <- crossing(first = last_list, last = minister, prox = 5)
+      ministername <- lapply(1:nrow(grid), prox_gen, grid = grid)
+      query_string <- paste0(query_string,') OR ((',
+                             paste0(unlist(ministername), collapse= ' OR '),') AND ',
+                             paste0('(',paste0(unlist(last_list), collapse = ' OR '),'))'))
     } else { ### Else, generate search for first/last name only (MPs and Party leaders, currently)
       query_string <- paste0(query_string,')')
     }
