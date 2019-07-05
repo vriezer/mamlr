@@ -114,6 +114,10 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
                         "Premier",
                         "premier")
         }
+        if(actor$`_source.function` == "JunMin") {
+          minister <- c("Staatssecretaris",
+                        "staatssecretaris")
+        }
       }
       grid <- crossing(first = last_list, last = minister, prox = 5)
       ministername <- lapply(1:nrow(grid), prox_gen, grid = grid)

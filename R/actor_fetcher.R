@@ -100,7 +100,7 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
     out_row <- select(out_row, -`_source.ud`) %>%
       unnest(`_source.computerCodes.actorsDetail`, .preserve = colnames(.)) %>%
       unnest(ids, .preserve = colnames(.)) %>%
-      select(-ids) %>%
+      rename(ids_list = ids) %>%
       rename(ids = ids1) %>%
       mutate(
         pids = str_sub(ids, start = 1, end = -3)
