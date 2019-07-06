@@ -95,9 +95,10 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
           sent = sent_sum/words,
           arousal = sent_words/words
         )
+      out_row <- select(out_row, -`_source.ud`)
     }
     ### Unnest out_row to individual actor ids
-    out_row <- select(out_row, -`_source.ud`) %>%
+    out_row <- out_row %>%
       unnest(`_source.computerCodes.actorsDetail`, .preserve = colnames(.)) %>%
       unnest(ids, .preserve = colnames(.)) %>%
       rename(ids_list = ids) %>%
