@@ -66,7 +66,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
   }
 
   ### Generating queries for individuals (ministers, PM, Party leaders and MPs)
-  if (actor$`_source.function` == "Minister" | actor$`_source.function` == "PM" | actor$`_source.function` == "PartyLeader" | actor$`_source.function` == "MP") {
+  if (actor$`_source.function` == "JunMin" | actor$`_source.function` == "Minister" | actor$`_source.function` == "PM" | actor$`_source.function` == "PartyLeader" | actor$`_source.function` == "MP") {
     ## Adding a separate AND clause for inclusion of only last name to highlight all occurences of last name
     ## Regardless of whether the last name hit is because of a minister name or a full name proximity hit
 
