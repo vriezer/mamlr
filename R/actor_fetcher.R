@@ -97,6 +97,12 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
         )
       out_row <- select(out_row, -`_source.ud`)
     }
+
+    if (validation == T) {
+      codes_sent <- filter(ud_sent, sentence_id == out_row$`_source.codes.sentence.id`[1])
+      return(cbind(out_row, codes = codes_sent))
+    }
+
     ### Unnest out_row to individual actor ids
     out_row <- out_row %>%
       unnest(`_source.computerCodes.actorsDetail`, .preserve = colnames(.)) %>%
@@ -152,11 +158,6 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
       )
       out_row <- bind_rows(lapply(seq(1,nrow(out_row),1),sent_scorer, out_row = out_row, ud_sent = ud_sent)) %>%
         cbind(., text = text_sent)
-      if (validation == T) {
-        codes_sent <- filter(ud_sent, sentence_id == out_row$`_source.codes.sentence.id`[1]) %>%
-          select(-sentence_id)
-        out_row <- cbind(out_row, codes = codes_sent)
-      }
     }
     out_row <- out_row %>%
       mutate(
