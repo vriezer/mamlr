@@ -4,14 +4,18 @@
 \alias{lemma_writer}
 \title{Generates text output files (without punctuation) for external applications, such as GloVe embeddings}
 \usage{
-lemma_writer(out, file, localhost = F)
+lemma_writer(out, file, localhost = F, documents = F, cores = 1)
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}
 
-\item{file}{The file to write the output to (including path, when required)}
+\item{file}{The file to write the output to (including path, when required). When documents = T, provide path including trailing /}
 
 \item{localhost}{Unused, but defaults to FALSE}
+
+\item{documents}{Indicate whether the writer should output to a single file, or individual documents}
+
+\item{cores}{Indicate the number of cores to use for parallel processing}
 }
 \value{
 A Quanteda dfm

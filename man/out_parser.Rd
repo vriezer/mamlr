@@ -4,7 +4,7 @@
 \alias{out_parser}
 \title{Parse raw text into a single field}
 \usage{
-out_parser(out, field, clean = F, cores = detectCores())
+out_parser(out, field, clean = F, cores = 1)
 }
 \arguments{
 \item{out}{The original output data frame}
