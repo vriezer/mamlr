@@ -18,7 +18,7 @@
 
 # filter(`_source.codes.timeSpent` != -1) %>% ### Exclude Norwegian summer sample hack
 
-dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = detectCores()) {
+dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = 1) {
   # Create subset with just ids, codes and text
   out <- out %>%
     select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
