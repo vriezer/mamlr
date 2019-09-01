@@ -4,6 +4,7 @@
 #' @param out The elasticizer-generated data frame
 #' @param file The file to write the output to (including path, when required). When documents = T, provide path including trailing /
 #' @param documents Indicate whether the writer should output to a single file, or individual documents
+#' @param lemma Indicate whether document output should be lemmas or original document
 #' @param cores Indicate the number of cores to use for parallel processing
 #' @param localhost Unused, but defaults to FALSE
 #' @return A Quanteda dfm
@@ -16,10 +17,14 @@
 #################################### Lemma text file generator #############################
 #################################################################################################
 
-lemma_writer <- function(out, file, localhost = F, documents = F, cores = 1) {
+lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cores = 1) {
   plan(multiprocess, workers = cores)
-  par_writer <- function(row, out) {
-    cat(iconv(out[row,]$merged, to = "UTF-8"), file = paste0(file,out[row,]$`_id`,'.txt'), append = F)
+  par_writer <- function(row, out, lemma) {
+    if (lemma == T) {
+      cat(iconv(unnest(out[row,],`_source.ud`)$lemma, to = "UTF-8"), file = paste0(file,out[row,]$`_id`,'.txt'), append = F)
+    } else {
+      cat(iconv(out[row,]$merged, to = "UTF-8"), file = paste0(file,out[row,]$`_id`,'.txt'), append = F)
+    }
   }
   if (documents == F) {
     out <- unnest(out,`_source.ud`)
@@ -28,6 +33,6 @@ lemma_writer <- function(out, file, localhost = F, documents = F, cores = 1) {
   }
   if (documents == T) {
     out <- out_parser(out, field = '_source', clean = F, cores = cores)
-    future_lapply(1:nrow(out), par_writer, out = out)
+    future_lapply(1:nrow(out), par_writer, out = out, lemma = lemma)
   }
 }
