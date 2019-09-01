@@ -21,7 +21,7 @@ lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cor
   plan(multiprocess, workers = cores)
   par_writer <- function(row, out, lemma) {
     if (lemma == T) {
-      cat(iconv(unnest(out[row,],`_source.ud`)$lemma, to = "UTF-8"), file = paste0(file,out[row,]$`_id`,'.txt'), append = F)
+      cat(iconv(unlist(unnest(out[row,],`_source.ud`)$lemma), to = "UTF-8"), file = paste0(file,out[row,]$`_id`,'.txt'), append = F)
     } else {
       cat(iconv(out[row,]$merged, to = "UTF-8"), file = paste0(file,out[row,]$`_id`,'.txt'), append = F)
     }
