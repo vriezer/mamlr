@@ -18,11 +18,11 @@
 #################################################################################################
 #################################### Update any kind of classification ##########################
 #################################################################################################
-class_update <- function(out, localhost = T, model_final, dfm_words, varname, text, words, clean, ver, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
+class_update <- function(out, localhost = T, model_final, varname, text, words, clean, ver, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
   print('updating')
   dfm <- dfm_gen(out, text = text, words = words, clean = clean) %>%
-    dfm_keep(dfm_words, valuetype="fixed", verbose=T)
-  pred <- data.frame(id = out$`_id`, pred = predict(model_final, newdata = dfm))
+    dfm_weight(weights = model_final$idf)
+  pred <- data.frame(id = out$`_id`, pred = predict(model_final$text_model, newdata = dfm, type = "class", force = T))
   bulk <- apply(pred, 1, bulk_writer, varname = varname, type = 'set', ver = ver)
   res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
 }

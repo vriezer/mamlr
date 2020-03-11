@@ -36,6 +36,9 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = 1) {
           .$codes == 92 ~ 1,
           .$codes == 91 ~ 1,
           .$codes == 93 ~ 1,
+          .$codes == 2301 ~ 1,
+          .$codes == 3101 ~ 1,
+          .$codes == 34 ~ 1,
           TRUE ~ 0
         )
       ) %>%
@@ -59,6 +62,6 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = 1) {
     }
   }
   dfm <- corpus(out$merged, docnames = out$`_id`, docvars = vardoc) %>%
-    dfm(tolower = T, stem = F, remove_punct = T, valuetype = "regex", ngrams = 1)
+    dfm(tolower = T, stem = F, remove_punct = T, valuetype = "regex")
   return(dfm)
 }

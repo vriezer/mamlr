@@ -31,7 +31,7 @@
 modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, seed, outer_k, inner_k, model, class_type, opt_measure, country, grid) {
   ### Functions ###
   feat_select <- function (topic, dfm, class_type, percentile,measure) {
-    keyness <- textstat_keyness(dfm, measure = measure, docvars(dfm, class_type) == as.numeric(topic)) %>%
+    keyness <- textstat_keyness(dfm, measure = measure, target = docvars(dfm, class_type) == as.numeric(topic)) %>%
       na.omit()
     keyness[,2] <- abs(keyness[,2])
     keyness <- filter(keyness, keyness[,2] > quantile(as.matrix(keyness[,2]),percentile))$feature
@@ -46,7 +46,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     # if (inner_k <= 1) {
     #   inner_folds <- createDataPartition(as.factor(docvars(dfm[-fold], class_type)), times = 1, p = 1-0.8)
     # } else {
-    inner_folds <- createFolds(as.factor(docvars(dfm[-fold], class_type)), k= inner_k)
+    inner_folds <- createFolds(as.factor(docvars(dfm[-fold,], class_type)), k= inner_k)
     # }
     return(c(outer_fold = list(fold),inner_folds))
   }
@@ -60,6 +60,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
 
   ### Gets called for every parameter combination, and calls classifier for every inner cv fold
   inner_cv <- function(row,grid,outer_fold, inner_folds, dfm, class_type, model, cores_inner, cores_feats) {
+    print(str_c('params ',row))
     params <- grid[row,]
     # For each inner fold, cross validate the specified parameters
     res <-
@@ -82,6 +83,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
 
   ### Gets called for every outer cv fold, and calls inner_cv for all parameter combinations in grid
   outer_cv <- function(fold, grid, dfm, class_type, model, cores_grid, cores_inner, cores_feats) {
+    print('outer cv')
     # If fold contains both inner folds and outer fold
     if (length(fold) == inner_k + 1) {
       inner_folds <- fold[-1]
@@ -130,39 +132,42 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     }
   }
 
-  ### Custom tfidf function to allow same idf for different dfm's
-  custom_tfidf <- function(x, scheme_tf = "count", scheme_df = "inverse", base = 10, dfreq = dfreq) {
-    if (!nfeat(x) || !ndoc(x)) return(x)
-    tfreq <- dfm_weight(x, scheme = scheme_tf, base = base)
-    if (nfeat(x) != length(dfreq))
-      stop("missing some values in idf calculation")
-    # get the document indexes
-    j <- as(tfreq, "dgTMatrix")@j + 1
-    # replace just the non-zero values by product with idf
-    x@x <- tfreq@x * dfreq[j]
-    # record attributes
-    x@weightTf <- tfreq@weightTf
-    x@weightDf <- c(list(scheme = scheme_df, base = base), args)
-    return(x)
-  }
+  # ### Custom tfidf function to allow same idf for different dfm's
+  # custom_tfidf <- function(x, scheme_tf = "count", scheme_df = "inverse", base = 10, dfreq = dfreq) {
+  #   if (!nfeat(x) || !ndoc(x)) return(x)
+  #   tfreq <- dfm_weight(x, scheme = scheme_tf, base = base)
+  #   if (nfeat(x) != length(dfreq))
+  #     stop("missing some values in idf calculation")
+  #   # get the document indexes
+  #   j <- as(tfreq, "dgTMatrix")@j + 1
+  #   # replace just the non-zero values by product with idf
+  #   x@x <- tfreq@x * dfreq[j]
+  #   # record attributes
+  #
+  #   ### Not setting weighting parameters in dfm to avoid "grouping after weighting" errors that occur since quanteda 1.4.2
+  #
+  #   # x@weightTf <- tfreq@weightTf
+  #   # x@weightDf <- c(list(scheme = scheme_df, base = base), args)
+  #   return(x)
+  # }
 
   ### Classification function
   classifier <- function (inner_fold, outer_fold, params, dfm, class_type, model, cores_feats) {
     # If both inner and outer folds, subset dfm to outer_fold training set, then create train and test sets according to inner fold. Evaluate performance
     if (length(inner_fold) > 0 && length(outer_fold) > 0)  {
-      dfm_train <- dfm[-outer_fold] %>%
-        .[-inner_fold]
-      dfm_test <- dfm[-outer_fold] %>%
-        .[inner_fold]
+      dfm_train <- dfm[-outer_fold,] %>%
+        .[-inner_fold,]
+      dfm_test <- dfm[-outer_fold,] %>%
+        .[inner_fold,]
       # If only outer folds, but no inner folds, validate performance of outer fold training data on outer fold test data
     } else if (length(outer_fold) > 0 ) {
-      dfm_train <- dfm[-outer_fold]
-      dfm_test <- dfm[outer_fold]
+      dfm_train <- dfm[-outer_fold,]
+      dfm_test <- dfm[outer_fold,]
       validation_cv <- T
       # If only inner folds, validate performance directly on inner folds (is the same as above?)
     } else if (length(inner_fold) > 0 ) {
-      dfm_train <- dfm[-inner_fold]
-      dfm_test <- dfm[inner_fold]
+      dfm_train <- dfm[-inner_fold,]
+      dfm_test <- dfm[inner_fold,]
       # If both inner and outer folds are NULL, set training set to whole dataset, estimate model and return final model
     } else {
       final <- T ### Indicate final modeling run on whole dataset
@@ -176,8 +181,8 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     ### Getting features from training dataset
     # Getting idf from training data, and using it to normalize both training and testing feature occurence
     dfm_train <- dfm_trim(dfm_train, min_termfreq = 1, min_docfreq = 0)
-    dfreq <- docfreq(dfm_train, scheme = "inverse", base = 10, smoothing = 0, k = 0, threshold = 0, use.names=T)
-    dfm_train <- custom_tfidf(dfm_train, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq)
+    idf <- docfreq(dfm_train, scheme = "inverse", base = 10, smoothing = 0, k = 0, threshold = 0)
+    dfm_train <- dfm_weight(dfm_train, weights = idf)
     # Added unique to filter out duplicate words, these are caused when there are multiple categories, and a words scores higher
     # than the threshold on two or more of those categories
     words <- unique(unlist(mclapply(unique(docvars(dfm_train, class_type)),
@@ -188,6 +193,7 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
                              measure = params$measures,
                              mc.cores = cores_feats
     )))
+    # dfm_train <- custom_tfidf(dfm_train, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq)
     dfm_train <- dfm_keep(dfm_train, words, valuetype="fixed", verbose=T)
 
 
@@ -220,20 +226,12 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
     # }
     ### Add more if statements for different models
     if (exists("final")) {
-      return(text_model)
+      return(list(text_model=text_model, idf=idf))
     } else {
       ### Removing all features not in training set from test set and weighting the remaining features according to training idf
       dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
-      dfm_test <- custom_tfidf(dfm_test, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq[words])
+      dfm_test <- dfm_weight(dfm_test, weights = idf)
       pred <- predict(text_model, newdata = dfm_test, type = 'class')
-      if (exists("validation_cv")) {
-        return(data.frame(
-          tv = docvars(dfm_test, class_type),
-          pred = pred,
-          params = params,
-          stringsAsFactors = F
-        ))
-      }
       ### Fix for single-class 'predictions' in borderline situations
       # if (length(unique(pred)) == 1 & class_type == 'junk') {
       #   if (unique(pred) == '0') {
@@ -247,7 +245,21 @@ modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, se
       u <- union(pred, docvars(dfm_test, class_type))
 
       class_table <- table(prediction = factor(pred, u), trueValues = factor(docvars(dfm_test, class_type), u))
-      conf_mat <- confusionMatrix(class_table, mode = "everything")
+      if (length(unique(u)) == 2) {
+        conf_mat <- confusionMatrix(class_table, mode = "everything", positive = max(u))
+      } else {
+        conf_mat <- confusionMatrix(class_table, mode = "everything")
+        conf_mat$positive <- NA
+      }
+      if (exists("validation_cv")) {
+        return(data.frame(
+          tv = docvars(dfm_test, class_type),
+          pred = pred,
+          params = params,
+          pos_cat = conf_mat$positive,
+          stringsAsFactors = F
+        ))
+      }
       if (is.matrix(conf_mat$byClass) == T) {
         return(cbind(as.data.frame(t(conf_mat$overall)),as.data.frame(t(colMeans(conf_mat$byClass))),params))
       } else {
