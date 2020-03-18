@@ -105,10 +105,9 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
 
     ### Unnest out_row to individual actor ids
     out_row <- out_row %>%
-      unnest(`_source.computerCodes.actorsDetail`, .preserve = colnames(.)) %>%
-      unnest(ids, .preserve = colnames(.)) %>%
-      rename(ids_list = ids) %>%
-      rename(ids = ids1) %>%
+      unnest(`_source.computerCodes.actorsDetail`) %>%
+      mutate(ids_list = ids) %>%
+      unnest(ids) %>%
       mutate(
         pids = str_sub(ids, start = 1, end = -3)
       )
@@ -166,7 +165,7 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
         yearmonthday = strftime(`_source.publication_date`, format = '%Y%m%d'),
         yearweek = strftime(`_source.publication_date`, format = "%Y%V")
       ) %>%
-      select(-`_source.computerCodes.actorsDetail`,
+      select(#-`_source.computerCodes.actorsDetail`,
              -`_score`,
              -`_index`,
              -`_type`,
