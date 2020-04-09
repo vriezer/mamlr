@@ -13,7 +13,7 @@
 #' @examples
 #' estimator(row, grid, outer_folds, dfm, class_type, model)
 #################################################################################################
-#################################### Generate CV folds ##########################################
+#################################### Generate models ############################################
 #################################################################################################
 
 ### Classification function
@@ -40,29 +40,16 @@ estimator <- function (row, grid, outer_folds, inner_folds, dfm, class_type, mod
     final <- T ### Indicate final modeling run on whole dataset
     dfm_train <- dfm
   }
-  ## Currently scheme_tf is not used explicitly
-  # if (model == 'nb') {
-  #   scheme_tf <- 'count' # The 'old' way
-  # } else {
-  #   scheme_tf <- 'prop' # The 'new' way
-  # }
 
-  ### Getting features from training dataset
-  # Getting idf from training data, and using it to normalize both training and testing feature occurence
-  dfm_train <- dfm_trim(dfm_train, min_termfreq = 1, min_docfreq = 0)
-  idf <- docfreq(dfm_train, scheme = "inverse", base = 10, smoothing = 0, k = 0, threshold = 0)
-  dfm_train <- dfm_weight(dfm_train, weights = idf)
-
-  # Keeping unique words that are important to one or more categories (see textstat_keyness and feat_select)
-  words <- unique(unlist(lapply(unique(docvars(dfm_train, class_type)),
-                                  feat_select,
-                                  dfm = dfm_train,
-                                  class_type = class_type,
-                                  percentile = params$percentiles,
-                                  measure = params$measures
-  )))
-  dfm_train <- dfm_keep(dfm_train, words, valuetype="fixed", verbose=T)
-
+  if (exists("final")) {
+    preproc_dfm <- preproc(dfm_train, NULL, params)
+    dfm_train <- preproc_dfm$dfm_train
+  } else {
+    preproc_dfm <- preproc(dfm_train, dfm_test, params)
+    dfm_train <- preproc_dfm$dfm_train
+    dfm_test <- preproc_dfm$dfm_test
+  }
+  idf <- preproc_dfm$idf
 
   if (model == "nb") {
     text_model <- textmodel_nb(dfm_train, y = docvars(dfm_train, class_type), smooth = .001, prior = "uniform", distribution = "multinomial")
@@ -80,7 +67,6 @@ estimator <- function (row, grid, outer_folds, inner_folds, dfm, class_type, mod
   if (exists("final")) {
     return(list(text_model=text_model, idf=idf))
   } else { # Create a test set, and classify test items
-    dfm_test <- dfm_weight(dfm_test, weights = idf)
     # Use force=T to keep only features present in both training and test set
     pred <- predict(text_model, newdata = dfm_test, type = 'class', force = T)
 
