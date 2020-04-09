@@ -4,9 +4,9 @@
 \alias{class_update}
 \title{Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information}
 \usage{
-class_update(out, localhost = T, model_final, dfm_words, varname, text,
-  words, clean, ver,
-  es_super = .rs.askForPassword("ElasticSearch WRITE"))
+class_update(out, localhost = T, model_final, varname, text, words,
+  clean, ver, es_super = .rs.askForPassword("ElasticSearch WRITE"),
+  cores = 1)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
@@ -14,8 +14,6 @@ class_update(out, localhost = T, model_final, dfm_words, varname, text,
 \item{localhost}{Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)}
 
 \item{model_final}{The classification model (e.g. output from textstat_nb(), svm() or others)}
-
-\item{dfm_words}{A dfm containing all the words and only the words used to generate the model (is used for subsetting)}
 
 \item{varname}{String containing the variable name to use for the classification result, usually has the format computerCodes.varname}
 
@@ -28,6 +26,8 @@ class_update(out, localhost = T, model_final, dfm_words, varname, text,
 \item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
 
 \item{es_super}{Password for write access to ElasticSearch}
+
+\item{dfm_words}{A dfm containing all the words and only the words used to generate the model (is used for subsetting)}
 }
 \value{
 As this is a nested function used within elasticizer, there is no return output

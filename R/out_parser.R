@@ -1,11 +1,12 @@
 #' Parse raw text into a single field
 #'
-#' Parse raw text into a single field
+#' Parse raw text from the MaML database into a single field
 #' @param out The original output data frame
 #' @param field Either 'highlight' or '_source', for parsing of the highlighted search result text, or the original source text
 #' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code)
 #' @param cores Number of cores to use for parallel processing, defaults to detectCores() (all cores available)
 #' @return a parsed output data frame including the additional column 'merged', containing the merged text
+#' @export
 #' @examples
 #' out_parser(out,field)
 

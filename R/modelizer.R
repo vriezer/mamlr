@@ -8,293 +8,122 @@
 #' - percentiles (cutoff point for tf-idf feature selection)
 #' - measures (what measure to use for determining feature importance, see textstat_keyness for options)
 #' @param dfm A quanteda dfm used to train and evaluate the model, should contain the vector with class labels in docvars
-#' @param cores_outer Number of cores to use for outer CV (cannot be more than the number of outer folds)
-#' @param cores_grid Number of cores to use for grid search (cannot be more than the number of grid rows (i.e. possible parameter combinations), multiplies with cores_outer)
-#' @param cores_inner Number of cores to use for inner CV loop (cannot be more than number of inner CV folds, multiplies with cores_outer and cores_grid)
-#' @param cores_feats Number of cores to use for feature selection (multiplies with cores outer, cores_grid and cores_inner)
-#' @param seed Integer to use as seed for random number generation, ensures replicability
 #' @param outer_k Number of outer cross-validation folds (for performance estimation)
 #' @param inner_k Number of inner cross-validation folds (for hyperparameter optimization and feature selection)
-#' @param model Classification algorithm to use (currently only "nb" for Naïve Bayes using textmodel_nb)
 #' @param class_type Type of classification to model ("junk", "aggregate", or "codes")
 #' @param opt_measure Label of measure in confusion matrix to use as performance indicator
 #' @param country Two-letter country abbreviation of the country the model is estimated for (used for filename)
 #' @param grid Data frame providing all possible combinations of hyperparameters and feature selection parameters for a given model (grid search)
-#' @return An .RData file in the current working directory (getwd()) containing the final model, performance estimates and the parameters used for grid search and cross-validation
+#' @param seed Integer to use as seed for random number generation, ensures replicability
+#' @param model Classification algorithm to use (currently only "nb" for Naïve Bayes using textmodel_nb)
+#' @param cores Number of threads used for parallel processing using future_lapply, defaults to 1
+#' @return An .Rds file in the current working directory (getwd()) with a list containing all relevant output
 #' @export
 #' @examples
-#' modelizer(dfm, cores_outer = 1, cores_grid = 1, cores_inner = 1, cores_feats = 1, seed = 42, outer_k = 3, inner_k = 5, model = model, class_type = class_type, opt_measure = opt_measure, country = country, grid = grid)
+#' modelizer(dfm, outer_k, inner_k, class_type, opt_measure, country, grid, seed, model, cores = 1)
 #################################################################################################
 #################################### Function to generate classification models #################
 #################################################################################################
 
-modelizer <- function(dfm, cores_outer, cores_grid, cores_inner, cores_feats, seed, outer_k, inner_k, model, class_type, opt_measure, country, grid) {
-  ### Functions ###
-  feat_select <- function (topic, dfm, class_type, percentile,measure) {
-    keyness <- textstat_keyness(dfm, measure = measure, target = docvars(dfm, class_type) == as.numeric(topic)) %>%
-      na.omit()
-    keyness[,2] <- abs(keyness[,2])
-    keyness <- filter(keyness, keyness[,2] > quantile(as.matrix(keyness[,2]),percentile))$feature
-    return(keyness)
-  }
-  ### Generate inner folds for nested cv
-  inner_loop <- function(fold, dfm, inner_k, class_type) {
-    # RNG needs to be set explicitly for each fold
-    set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion")
-    ## Either createDataPartition for simple holdout parameter optimization
-    ## Or createFolds for proper inner CV for nested CV
-    # if (inner_k <= 1) {
-    #   inner_folds <- createDataPartition(as.factor(docvars(dfm[-fold], class_type)), times = 1, p = 1-0.8)
-    # } else {
-    inner_folds <- createFolds(as.factor(docvars(dfm[-fold,], class_type)), k= inner_k)
-    # }
-    return(c(outer_fold = list(fold),inner_folds))
-  }
+modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, grid, seed, model, cores = 1) {
+  ## Generate list containing outer folds row numbers, inner folds row numbers, and grid for model building
+  folds <- cv_generator(outer_k,inner_k = inner_k, dfm = dfm, class_type = class_type, grid = grid, seed = seed)
+  inner_grid <- folds$grid
+  outer_folds <- folds$outer_folds
+  inner_folds <- folds$inner_folds
 
-  ### Generate outer folds for nested cv
-  generate_folds <- function(outer_k, inner_k, dfm, class_type){
-    set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion")
-    folds <- createFolds(as.factor(docvars(dfm, class_type)), k= outer_k)
-    return(lapply(folds,inner_loop, dfm = dfm, inner_k = inner_k, class_type = class_type))
-  }
+  ## Create multithread work pool for future_lapply
+  plan(strategy = multiprocess, workers = cores)
 
-  ### Gets called for every parameter combination, and calls classifier for every inner cv fold
-  inner_cv <- function(row,grid,outer_fold, inner_folds, dfm, class_type, model, cores_inner, cores_feats) {
-    print(str_c('params ',row))
-    params <- grid[row,]
-    # For each inner fold, cross validate the specified parameters
-    res <-
-      bind_rows(mclapply(inner_folds,
-                         classifier,
-                         outer_fold = outer_fold,
-                         params = params,
-                         dfm = dfm,
-                         class_type = class_type,
-                         model = model,
-                         cores_feats = cores_feats,
-                         mc.cores = cores_inner
-      )
-      )
-    # print(res)
-    # print(res[1,1])
-    # print('inner_cv')
-    return(cbind(as.data.frame(t(colMeans(select(res, 1:`Balanced Accuracy`)))),params))
-  }
-
-  ### Gets called for every outer cv fold, and calls inner_cv for all parameter combinations in grid
-  outer_cv <- function(fold, grid, dfm, class_type, model, cores_grid, cores_inner, cores_feats) {
-    print('outer cv')
-    # If fold contains both inner folds and outer fold
-    if (length(fold) == inner_k + 1) {
-      inner_folds <- fold[-1]
-      outer_fold <- fold$outer_fold
-      # For each row in grid, cross-validate results
-      res <- bind_rows(mclapply(seq(1,length(grid[[1]]),1),
-                                inner_cv,
-                                cores_feats= cores_feats,
-                                grid = grid,
-                                dfm = dfm,
-                                class_type = class_type,
-                                model = model,
-                                outer_fold = outer_fold,
-                                inner_folds = inner_folds,
-                                cores_inner = cores_inner,
-                                mc.cores = cores_grid)
-      )
-      # print(res)
-      # print(res[1,1])
-      # print('outer_cv')
-      # Determine optimum hyperparameters within outer fold training set
-      optimum <- res[which.max(res[,opt_measure]),] %>%
-        select(percentiles: ncol(.))
-      # Validate performance of optimum hyperparameters on outer fold test set
-      return(classifier(NULL, outer_fold = outer_fold, params = optimum, dfm = dfm, class_type = class_type, model = model, cores_feats = cores_feats))
-    } else {
-      # If no outer fold, go directly to parameter optimization using inner folds, and return performance of hyperparameters
-      inner_folds <- fold
-      outer_fold <- NULL
-      res <- bind_rows(mclapply(seq(1,length(grid[[1]]),1),
-                                inner_cv,
-                                cores_feats= cores_feats,
-                                grid = grid,
-                                dfm = dfm,
-                                class_type = class_type,
-                                model = model,
-                                outer_fold = outer_fold,
-                                inner_folds = inner_folds,
-                                cores_inner = cores_inner,
-                                mc.cores = cores_grid)
-      )
-      # print(res)
-      # print(res[1,1])
-      # print('line 126, final model parameter optimization')
-      return(res)
-    }
-  }
-
-  # ### Custom tfidf function to allow same idf for different dfm's
-  # custom_tfidf <- function(x, scheme_tf = "count", scheme_df = "inverse", base = 10, dfreq = dfreq) {
-  #   if (!nfeat(x) || !ndoc(x)) return(x)
-  #   tfreq <- dfm_weight(x, scheme = scheme_tf, base = base)
-  #   if (nfeat(x) != length(dfreq))
-  #     stop("missing some values in idf calculation")
-  #   # get the document indexes
-  #   j <- as(tfreq, "dgTMatrix")@j + 1
-  #   # replace just the non-zero values by product with idf
-  #   x@x <- tfreq@x * dfreq[j]
-  #   # record attributes
-  #
-  #   ### Not setting weighting parameters in dfm to avoid "grouping after weighting" errors that occur since quanteda 1.4.2
-  #
-  #   # x@weightTf <- tfreq@weightTf
-  #   # x@weightDf <- c(list(scheme = scheme_df, base = base), args)
-  #   return(x)
-  # }
-
-  ### Classification function
-  classifier <- function (inner_fold, outer_fold, params, dfm, class_type, model, cores_feats) {
-    # If both inner and outer folds, subset dfm to outer_fold training set, then create train and test sets according to inner fold. Evaluate performance
-    if (length(inner_fold) > 0 && length(outer_fold) > 0)  {
-      dfm_train <- dfm[-outer_fold,] %>%
-        .[-inner_fold,]
-      dfm_test <- dfm[-outer_fold,] %>%
-        .[inner_fold,]
-      # If only outer folds, but no inner folds, validate performance of outer fold training data on outer fold test data
-    } else if (length(outer_fold) > 0 ) {
-      dfm_train <- dfm[-outer_fold,]
-      dfm_test <- dfm[outer_fold,]
-      validation_cv <- T
-      # If only inner folds, validate performance directly on inner folds (is the same as above?)
-    } else if (length(inner_fold) > 0 ) {
-      dfm_train <- dfm[-inner_fold,]
-      dfm_test <- dfm[inner_fold,]
-      # If both inner and outer folds are NULL, set training set to whole dataset, estimate model and return final model
-    } else {
-      final <- T ### Indicate final modeling run on whole dataset
-      dfm_train <- dfm
-    }
-    if (model == 'nb') {
-      scheme_tf <- 'count' # The 'old' way
-    } else {
-      scheme_tf <- 'prop' # The 'new' way
-    }
-    ### Getting features from training dataset
-    # Getting idf from training data, and using it to normalize both training and testing feature occurence
-    dfm_train <- dfm_trim(dfm_train, min_termfreq = 1, min_docfreq = 0)
-    idf <- docfreq(dfm_train, scheme = "inverse", base = 10, smoothing = 0, k = 0, threshold = 0)
-    dfm_train <- dfm_weight(dfm_train, weights = idf)
-    # Added unique to filter out duplicate words, these are caused when there are multiple categories, and a words scores higher
-    # than the threshold on two or more of those categories
-    words <- unique(unlist(mclapply(unique(docvars(dfm_train, class_type)),
-                             feat_select,
-                             dfm = dfm_train,
-                             class_type = class_type,
-                             percentile = params$percentiles,
-                             measure = params$measures,
-                             mc.cores = cores_feats
-    )))
-    # dfm_train <- custom_tfidf(dfm_train, scheme_tf = scheme_tf, scheme_df = "inverse", base = 10, dfreq = dfreq)
-    dfm_train <- dfm_keep(dfm_train, words, valuetype="fixed", verbose=T)
+  ## Use estimator function to build models for every parameter combination in grid
+  inner_cv_output <- future_lapply(1:nrow(inner_grid), estimator,
+                                   grid = inner_grid,
+                                   outer_folds = outer_folds,
+                                   inner_folds = inner_folds,
+                                   dfm = dfm,
+                                   class_type = class_type,
+                                   model = model) %>%
+    future_lapply(.,metric_gen) %>% # Generate model performance metrics for each grid row
+    bind_rows(.)
 
 
-    if (model == "nb") {
-      text_model <- textmodel_nb(dfm_train, y = docvars(dfm_train, class_type), smooth = .001, prior = "uniform", distribution = "multinomial")
-    }
-    if (model == "svm") {
-      text_model <- svm(x=dfm_train, y=as.factor(docvars(dfm_train, class_type)), type = "C-classification", kernel = params$kernel, gamma = params$gamma, cost = params$cost, epsilon = params$epsilon)
-    }
-    if (model == 'nnet') {
-      idC <- class.ind(as.factor(docvars(dfm_train, class_type)))
-      text_model <- nnet(dfm_train, idC, decay = params$decay, size=params$size, maxit=params$maxit, softmax=T, reltol = params$reltol, MaxNWts = params$size*(length(dfm_train@Dimnames$features)+1)+(params$size*2)+2)
-    }
-    # if (model == 'neuralnet') {
-    #   dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
-    #   dfm_test <- custom_tfidf(dfm_test, scheme_tf = "prop", scheme_df = "inverse", base = 10, dfreq = dfreq[words])
-    #
-    #   idC <- class.ind(as.factor(docvars(dfm_train, class_type)))
-    #   colnames(idC) <- NULL
-    #   nn_train <- cbind(idC, dfm_train)
-    #   n <- colnames(nn_train)[3:length(colnames(nn_train))]
-    #   f <- as.formula(paste0("feat1 + feat2 ~ `", paste0(n, collapse = "` + `"),"`"))
-    #   idC_out <- class.ind(as.factor(docvars(dfm_test, class_type)))
-    #   colnames(idC_out) <- NULL
-    #   nn_test <- cbind(idC_out, dfm_test)
-    #   nn <- neuralnet(f,data=nn_train,hidden=3,linear.output=F,act.fct = 'logistic',lifesign = 'full', threshold = .005)
-    #   pr.nn <- compute(nn,nn_test[,3:length(colnames(nn_test))])
-    #   class_table <- table(prediction = as.matrix(round(pr.nn$net.result[,2])), trueValues = as.matrix(idC_out[,2]))
-    #   nn_conf_mat <- confusionMatrix(class_table, mode = "everything")
-    # }
-    ### Add more if statements for different models
-    if (exists("final")) {
-      return(list(text_model=text_model, idf=idf))
-    } else {
-      ### Removing all features not in training set from test set and weighting the remaining features according to training idf
-      dfm_test <- dfm_keep(dfm_test, pattern = dfm_train, valuetype = "fixed", verbose = T)
-      dfm_test <- dfm_weight(dfm_test, weights = idf)
-      pred <- predict(text_model, newdata = dfm_test, type = 'class')
-      ### Fix for single-class 'predictions' in borderline situations
-      # if (length(unique(pred)) == 1 & class_type == 'junk') {
-      #   if (unique(pred) == '0') {
-      #     pred[1] <- '1'
-      #   } else {
-      #     pred[1] <- '0'
-      #   }
-      # }
+  outer_grid <- inner_cv_output %>%
+    # Group by outer folds, and by parameters used for model tuning
+    group_by_at(c("outer_fold", colnames(grid))) %>%
+    # Get mean values for all numeric (performance indicator) variables
+    summarise_if(is.numeric, mean, na.rm = F) %>%
+    # Group the mean performance indicators by outer_fold
+    group_by(outer_fold) %>%
+    # Get for each outer_fold the row with the highest value of opt_measure
+    slice(which.max((!!as.name(opt_measure)))) %>%
+    # Select only the columns outer_fold, and the columns that are in the original parameter grid
+    select(outer_fold, colnames(grid))
 
-      ### Fix for missing classes in multiclass classification
-      u <- union(pred, docvars(dfm_test, class_type))
+  # Use the estimator function to build optimum models for each outer_fold
+  outer_cv_output <- future_lapply(1:nrow(outer_grid), estimator,
+                                   grid = outer_grid,
+                                   outer_folds = outer_folds,
+                                   inner_folds = NULL,
+                                   dfm = dfm,
+                                   class_type = class_type,
+                                   model = model) %>%
+    future_lapply(., metric_gen) %>% # Generate performance metrics for each row in outer_grid
+    bind_rows(.)
 
-      class_table <- table(prediction = factor(pred, u), trueValues = factor(docvars(dfm_test, class_type), u))
-      if (length(unique(u)) == 2) {
-        conf_mat <- confusionMatrix(class_table, mode = "everything", positive = max(u))
-      } else {
-        conf_mat <- confusionMatrix(class_table, mode = "everything")
-        conf_mat$positive <- NA
-      }
-      if (exists("validation_cv")) {
-        return(data.frame(
-          tv = docvars(dfm_test, class_type),
-          pred = pred,
-          params = params,
-          pos_cat = conf_mat$positive,
-          stringsAsFactors = F
-        ))
-      }
-      if (is.matrix(conf_mat$byClass) == T) {
-        return(cbind(as.data.frame(t(conf_mat$overall)),as.data.frame(t(colMeans(conf_mat$byClass))),params))
-      } else {
-        return(cbind(as.data.frame(t(conf_mat$overall)),as.data.frame(t(conf_mat$byClass)),params, pos_cat = conf_mat$positive))
-      }
-    }
-  }
+  # Create (inner) folds for parameter optimization on the entire dataset
+  final_folds <- cv_generator(NULL,inner_k = inner_k, dfm = dfm, class_type = class_type, grid = grid, seed = seed)
+  final_grid <- final_folds$grid
+  final_inner <- final_folds$inner_folds
 
-  ### If outer_k is 1, do a holdout training run, with only cross-validation for parameter optimization, else, do nested CV
-  ### If holdout, training/test distribution is the same as for inner CV
-  if (outer_k == 1) {
-    outer_fold <- createDataPartition(as.factor(docvars(dfm, class_type)), p=1-(1/inner_k)*(inner_k-1))
-    folds <- lapply(outer_fold,inner_loop, dfm = dfm, inner_k = inner_k, class_type = class_type)
-  } else {
-    ## Generate nested CV folds, based on number of inner and outer folds defined (see start of script)
-    folds <- generate_folds(outer_k,inner_k = inner_k, dfm = dfm, class_type = class_type)
-  }
+  # Use the estimator function to estimate the performance of each row in final_grid
+  final_cv_output <- future_lapply(1:nrow(final_grid), estimator,
+                                   grid = final_grid,
+                                   outer_folds = NULL,
+                                   inner_folds = final_inner,
+                                   dfm = dfm,
+                                   class_type = class_type,
+                                   model = model) %>%
+    future_lapply(.,metric_gen) %>% # Generate performance metrics for each row in final_grid
+    bind_rows(.)
 
-  ## Get performance of each outer fold validation, and add row with mean scores (This is the final performance indicator)
-  performance <- mclapply(folds, outer_cv, grid=grid, dfm=dfm, class_type=class_type, model=model, cores_grid=cores_grid, cores_inner=cores_inner, cores_feats=cores_feats, mc.cores = cores_outer)
 
-  ## Set seed and generate folds for final hyperparameter optimization search (using CV)
-  set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion")
-  folds_final <- list(createFolds(as.factor(docvars(dfm, class_type)), k= inner_k))
+  final_params <- final_cv_output %>%
+    # Group final parameter optimization cv results by parameters used for optimization
+    group_by_at(colnames(grid)) %>%
+    # Get mean performance metrics for each fold
+    summarise_if(is.numeric, mean, na.rm = F) %>%
+    # Ungroup to allow for slicing
+    ungroup() %>%
+    # Select row with highest value of opt_measure
+    slice(which.max((!!as.name(opt_measure)))) %>%
+    # Keep only the columns that are present in the original parameter grid
+    select(colnames(grid))
+  # Use the estimator function to estimate the final model, using the optimum parameters provided in final_params
+  model_final <- estimator(1,
+                           grid = final_params,
+                           outer_folds = NULL,
+                           inner_folds = NULL,
+                           dfm = dfm,
+                           class_type = class_type,
+                           model = model)
+  # Create list with output variables
+  output <- list(final_cv_output = final_cv_output,
+                 final_params = final_params,
+                 outer_cv_output = outer_cv_output,
+                 model_final = model_final,
+                 grid = grid,
+                 seed = seed,
+                 opt_measure = opt_measure,
+                 model = model,
+                 country = country,
+                 class_type = class_type)
 
-  ## Get the final hyperparameter performance for all value combinations in grid
-  params_final <- bind_rows(mclapply(folds_final, outer_cv, grid=grid, dfm=dfm, class_type=class_type, model=model, cores_grid=cores_grid, cores_inner=cores_inner, cores_feats=cores_feats, mc.cores = cores_outer))
+  # Set name for output .Rds file
+  filename <- paste0(getwd(),'/',country,'_',model,'_',class_type,'_',opt_measure,'_',Sys.time(),'.Rds')
 
-  ## Select optimum final hyperparameters
-  optimum_final <- params_final[which.max(params_final[,opt_measure]),] %>%
-    select(percentiles: ncol(.))
+  # Save RDS file with output
+  saveRDS(output, file = filename)
 
-  ## Estimate final model on whole dataset, using optimum final hyperparameters determined above
-  model_final <- classifier(NULL, outer_fold = NULL, params = optimum_final, dfm = dfm, class_type = class_type, model = model, cores_feats = max(c(cores_feats,cores_grid,cores_inner,cores_outer)))
-  rm(list=setdiff(ls(), c("model_final", "optimum_final","params_final","performance","grid","folds","folds_final","country","model","class_type","opt_measure")), envir = environment())
-  save(list = ls(all.names = TRUE), file = paste0(getwd(),'/',country,'_',model,'_',class_type,'_',opt_measure,'_',Sys.time(),'.RData'), envir = environment())
-  return(paste0(getwd(),'/',country,'_',model,'_',class_type,'_',opt_measure,'_',Sys.time(),'.RData'))
+  # Return ouput RDS filename
+  return(filename)
 }

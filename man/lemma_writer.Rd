@@ -4,7 +4,8 @@
 \alias{lemma_writer}
 \title{Generates text output files (without punctuation) for external applications, such as GloVe embeddings}
 \usage{
-lemma_writer(out, file, localhost = F, documents = F, cores = 1)
+lemma_writer(out, file, localhost = F, documents = F, lemma = F,
+  cores = 1)
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}
@@ -14,6 +15,8 @@ lemma_writer(out, file, localhost = F, documents = F, cores = 1)
 \item{localhost}{Unused, but defaults to FALSE}
 
 \item{documents}{Indicate whether the writer should output to a single file, or individual documents}
+
+\item{lemma}{Indicate whether document output should be lemmas or original document}
 
 \item{cores}{Indicate the number of cores to use for parallel processing}
 }

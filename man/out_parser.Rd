@@ -19,7 +19,7 @@ out_parser(out, field, clean = F, cores = 1)
 a parsed output data frame including the additional column 'merged', containing the merged text
 }
 \description{
-Parse raw text into a single field
+Parse raw text from the MaML database into a single field
 }
 \examples{
 out_parser(out,field)

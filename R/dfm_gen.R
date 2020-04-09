@@ -6,6 +6,7 @@
 #' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags
 #' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code).
 #' @param cores Number of cores to use for parallel processing, defaults to cores (all cores available)
+#' @param tolower Boolean indicating whether dfm features should be lowercased
 #' @return A Quanteda dfm
 #' @export
 #' @examples
@@ -18,7 +19,7 @@
 
 # filter(`_source.codes.timeSpent` != -1) %>% ### Exclude Norwegian summer sample hack
 
-dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = 1) {
+dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = 1, tolower = T) {
   # Create subset with just ids, codes and text
   out <- out %>%
     select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
@@ -62,6 +63,6 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, cores = 1) {
     }
   }
   dfm <- corpus(out$merged, docnames = out$`_id`, docvars = vardoc) %>%
-    dfm(tolower = T, stem = F, remove_punct = T, valuetype = "regex")
+    dfm(tolower = tolower, stem = F, remove_punct = T, valuetype = "regex")
   return(dfm)
 }
