@@ -76,14 +76,15 @@ actor_fetcher <- function(out, sent_dict = NULL, actor_ids = NULL, cores = 1, lo
       ud_sent <- out_row$`_source.ud`[[1]] %>%
         select(-one_of('exists')) %>%
         unnest() %>%
-        filter(upos != 'PUNCT') %>% # For getting proper word counts
+        filter(upos != 'PUNCT') # For getting proper word counts
         if ("lem_u" %in% colnames(sent_dict)) {
           ud_sent <- ud_sent %>%
             mutate(lem_u = str_c(lemma,'_',upos)) %>%
             left_join(sent_dict, by = 'lem_u')
         } else if ("lemma" %in% colnames(sent_dict)) {
           ud_sent <- ud_sent %>%
-            left_join(sent_dict, by = 'lemma')
+            left_join(sent_dict, by = 'lemma') %>%
+            mutate(lem_u = lemma)
         }
       ud_sent <- ud_sent %>%
         group_by(sentence_id) %>%
@@ -119,7 +120,7 @@ actor_fetcher <- function(out, sent_dict = NULL, actor_ids = NULL, cores = 1, lo
       )
 
     if (!is.null(actor_ids)) {
-      out_row <- filter(out_row, ids %in% actorids )
+      out_row <- filter(out_row, ids %in% actor_ids )
     }
 
     ### Get list of party ids occuring more than once in the document
