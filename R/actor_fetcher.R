@@ -3,6 +3,7 @@
 #' Generate actor data frames (with sentiment) from database
 #' @param out Data frame produced by elasticizer
 #' @param sent_dict Optional dataframe containing the sentiment dictionary (see sentiment paper scripts for details on format)
+#' @param actor_ids Optional vector containing the actor ids to be collected
 #' @param cores Number of threads to use for parallel processing
 #' @param validation Boolean indicating whether human validation should be performed on sentiment scoring
 #' @return No return value, data per batch is saved in an RDS file
@@ -12,7 +13,7 @@
 #################################################################################################
 #################################### Aggregate actor results ################################
 #################################################################################################
-actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, validation = F) {
+actor_fetcher <- function(out, sent_dict = NULL, actor_ids = NULL, cores = 1, localhost = NULL, validation = F) {
   plan(multiprocess, workers = cores)
   ### Functions
   ### Calculate sentiment scores for each actor-document
@@ -111,6 +112,10 @@ actor_fetcher <- function(out, sent_dict = NULL, cores = 1, localhost = NULL, va
       mutate(
         pids = str_sub(ids, start = 1, end = -3)
       )
+
+    if (!is.null(actor_ids)) {
+      out_row <- filter(out_row, ids %in% actorids )
+    }
 
     ### Get list of party ids occuring more than once in the document
     pids_table <- table(out_row$pids)
