@@ -2,7 +2,7 @@
 #'
 #' Generate actor data frames (with sentiment) from database
 #' @param out Data frame produced by elasticizer
-#' @param sent_dict Optional dataframe containing the sentiment dictionary (see sentiment paper scripts for details on format)
+#' @param sent_dict Optional dataframe containing the sentiment dictionary and values. Words should be either in the "lem_u" column when they consist of lemma_upos pairs, or in the "lemma" column when they are just lemmas. The "prox" column should either contain word values, or NAs if not applicable.
 #' @param actor_ids Optional vector containing the actor ids to be collected
 #' @param cores Number of threads to use for parallel processing
 #' @param validation Boolean indicating whether human validation should be performed on sentiment scoring
@@ -77,10 +77,15 @@ actor_fetcher <- function(out, sent_dict = NULL, actor_ids = NULL, cores = 1, lo
         select(-one_of('exists')) %>%
         unnest() %>%
         filter(upos != 'PUNCT') %>% # For getting proper word counts
-        mutate(lem_u = str_c(lemma,'_',upos)) %>%
-        left_join(sent_dict, by = 'lem_u') %>%
-        # ### Setting binary sentiment as unit of analysis
-        # mutate(prox = V3) %>%
+        if ("lem_u" %in% colnames(sent_dict)) {
+          ud_sent <- ud_sent %>%
+            mutate(lem_u = str_c(lemma,'_',upos)) %>%
+            left_join(sent_dict, by = 'lem_u')
+        } else if ("lemma" %in% colnames(sent_dict)) {
+          ud_sent <- ud_sent %>%
+            left_join(sent_dict, by = 'lemma')
+        }
+      ud_sent <- ud_sent %>%
         group_by(sentence_id) %>%
         mutate(
           prox = case_when(
