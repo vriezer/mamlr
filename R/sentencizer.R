@@ -63,7 +63,7 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
 
     ### Unnest out_row to individual actor ids
 
-    if("_source.computerCodes.actorsDetail2" %in% colnames(out)) {
+    if("_source.computerCodes.actorsDetail" %in% colnames(out)) {
       out <- out %>%
         unnest(`_source.computerCodes.actorsDetail`) %>%
         # mutate(ids_list = ids) %>%
