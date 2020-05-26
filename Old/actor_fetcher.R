@@ -38,31 +38,31 @@ actor_fetcher <- function(out, sent_dict = NULL, actor_ids = NULL, cores = 1, lo
     ### Party ids including actors
     p_ids_a <- c(p_ids,str_c(pid,'_a'))
     summarizer <- function (p_ids, dupe_df, merged_id) {
-        id <- dupe_df$`_id`[[1]]
-        dupe_df <- dupe_df %>%
-          filter(ids %in% p_ids)
-        if (nrow(dupe_df) > 0) {
-          return(
-            dupe_df %>% summarise(
-              `_id` = first(`_id`),
-              `_source.doctype` = first(`_source.doctype`),
-              `_source.publication_date` = first(`_source.publication_date`),
-              prom = list(length(unique(unlist(sentence_id)))/round(occ[[1]]/prom[[1]])),
-              sentence_id = list(sort(unique(unlist(sentence_id)))),
-              rel_first = list(max(unlist(rel_first))),
-              ids = merged_id,
-              occ = list(length(unique(unlist(sentence_id)))),
-              first = list(min(unlist(sentence_id))),
-              actor_start = list(sort(unique(unlist(actor_start)))),
-              actor_end = list(sort(unique(unlist(actor_end)))),
-              sentence_start = list(sort(unique(unlist(sentence_start)))),
-              sentence_end = list(sort(unique(unlist(sentence_end))))
-            )
+      id <- dupe_df$`_id`[[1]]
+      dupe_df <- dupe_df %>%
+        filter(ids %in% p_ids)
+      if (nrow(dupe_df) > 0) {
+        return(
+          dupe_df %>% summarise(
+            `_id` = first(`_id`),
+            `_source.doctype` = first(`_source.doctype`),
+            `_source.publication_date` = first(`_source.publication_date`),
+            prom = list(length(unique(unlist(sentence_id)))/round(occ[[1]]/prom[[1]])),
+            sentence_id = list(sort(unique(unlist(sentence_id)))),
+            rel_first = list(max(unlist(rel_first))),
+            ids = merged_id,
+            occ = list(length(unique(unlist(sentence_id)))),
+            first = list(min(unlist(sentence_id))),
+            actor_start = list(sort(unique(unlist(actor_start)))),
+            actor_end = list(sort(unique(unlist(actor_end)))),
+            sentence_start = list(sort(unique(unlist(sentence_start)))),
+            sentence_end = list(sort(unique(unlist(sentence_end))))
           )
-        } else {
-          print(paste0('id:',id))
-          return(NULL)
-        }
+        )
+      } else {
+        print(paste0('id:',id))
+        return(NULL)
+      }
     }
     party <- summarizer(p_ids, dupe_df, str_c(pid,'_mfs'))
     party_actor <- summarizer(p_ids_a, dupe_df, str_c(pid,'_mfsa'))
@@ -77,15 +77,15 @@ actor_fetcher <- function(out, sent_dict = NULL, actor_ids = NULL, cores = 1, lo
         select(-one_of('exists')) %>%
         unnest() %>%
         filter(upos != 'PUNCT') # For getting proper word counts
-        if ("lem_u" %in% colnames(sent_dict)) {
-          ud_sent <- ud_sent %>%
-            mutate(lem_u = str_c(lemma,'_',upos)) %>%
-            left_join(sent_dict, by = 'lem_u')
-        } else if ("lemma" %in% colnames(sent_dict)) {
-          ud_sent <- ud_sent %>%
-            left_join(sent_dict, by = 'lemma') %>%
-            mutate(lem_u = lemma)
-        }
+      if ("lem_u" %in% colnames(sent_dict)) {
+        ud_sent <- ud_sent %>%
+          mutate(lem_u = str_c(lemma,'_',upos)) %>%
+          left_join(sent_dict, by = 'lem_u')
+      } else if ("lemma" %in% colnames(sent_dict)) {
+        ud_sent <- ud_sent %>%
+          left_join(sent_dict, by = 'lemma') %>%
+          mutate(lem_u = lemma)
+      }
       ud_sent <- ud_sent %>%
         group_by(sentence_id) %>%
         mutate(
@@ -177,10 +177,10 @@ actor_fetcher <- function(out, sent_dict = NULL, actor_ids = NULL, cores = 1, lo
         yearweek = strftime(`_source.publication_date`, format = "%Y%V")
       ) %>%
       select(#-`_source.computerCodes.actorsDetail`,
-             -`_score`,
-             -`_index`,
-             -`_type`,
-             -pids)
+        -`_score`,
+        -`_index`,
+        -`_type`,
+        -pids)
     return(out_row)
   }
   saveRDS(bind_rows(future_lapply(1:nrow(out), par_sent, out = out, sent_dict = sent_dict)), file = paste0('df_out',as.numeric(as.POSIXct(Sys.time())),'.Rds'))

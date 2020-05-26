@@ -4,16 +4,14 @@
 \alias{cv_generator}
 \title{Generate CV folds for nested cross-validation}
 \usage{
-cv_generator(outer_k, inner_k, dfm, class_type, grid, seed)
+cv_generator(outer_k, inner_k, vec, grid, seed)
 }
 \arguments{
 \item{outer_k}{Number of outer CV (performance estimation) folds. If outer_k < 1 holdout sampling is used, with outer_k being the amount of test data}
 
 \item{inner_k}{Number of inner CV (parameter optimization) folds}
 
-\item{dfm}{DFM containing the labeled documents}
-
-\item{class_type}{Name of the column in docvars containing the classification}
+\item{vec}{Vector containing the true values of the classification}
 
 \item{grid}{Parameter grid for optimization}
 

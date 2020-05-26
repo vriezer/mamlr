@@ -4,8 +4,21 @@
 \alias{modelizer_old}
 \title{Generate a classification model}
 \usage{
-modelizer_old(dfm, cores_outer, cores_grid, cores_inner, cores_feats, seed,
-  outer_k, inner_k, model, class_type, opt_measure, country, grid)
+modelizer_old(
+  dfm,
+  cores_outer,
+  cores_grid,
+  cores_inner,
+  cores_feats,
+  seed,
+  outer_k,
+  inner_k,
+  model,
+  class_type,
+  opt_measure,
+  country,
+  grid
+)
 }
 \arguments{
 \item{dfm}{A quanteda dfm used to train and evaluate the model, should contain the vector with class labels in docvars}

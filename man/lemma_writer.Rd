@@ -4,8 +4,7 @@
 \alias{lemma_writer}
 \title{Generates text output files (without punctuation) for external applications, such as GloVe embeddings}
 \usage{
-lemma_writer(out, file, localhost = F, documents = F, lemma = F,
-  cores = 1)
+lemma_writer(out, file, localhost = F, documents = F, lemma = F, cores = 1)
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}

@@ -4,10 +4,18 @@
 \alias{elasticizer}
 \title{Generate a data frame out of unparsed Elasticsearch JSON}
 \usage{
-elasticizer(query, src = T, index = "maml",
-  es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024,
-  max_batch = Inf, time_scroll = "5m", update = NULL,
-  localhost = F, ...)
+elasticizer(
+  query,
+  src = T,
+  index = "maml",
+  es_pwd = .rs.askForPassword("Elasticsearch READ"),
+  batch_size = 1024,
+  max_batch = Inf,
+  time_scroll = "5m",
+  update = NULL,
+  localhost = F,
+  ...
+)
 }
 \arguments{
 \item{query}{A JSON-formatted query in the Elasticsearch query DSL}

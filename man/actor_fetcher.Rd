@@ -4,13 +4,21 @@
 \alias{actor_fetcher}
 \title{Generate actor data frames (with sentiment) from database}
 \usage{
-actor_fetcher(out, sent_dict = NULL, cores = 1, localhost = NULL,
-  validation = F)
+actor_fetcher(
+  out,
+  sent_dict = NULL,
+  actor_ids = NULL,
+  cores = 1,
+  localhost = NULL,
+  validation = F
+)
 }
 \arguments{
 \item{out}{Data frame produced by elasticizer}
 
-\item{sent_dict}{Optional dataframe containing the sentiment dictionary (see sentiment paper scripts for details on format)}
+\item{sent_dict}{Optional dataframe containing the sentiment dictionary and values. Words should be either in the "lem_u" column when they consist of lemma_upos pairs, or in the "lemma" column when they are just lemmas. The "prox" column should either contain word values, or NAs if not applicable.}
+
+\item{actor_ids}{Optional vector containing the actor ids to be collected}
 
 \item{cores}{Number of threads to use for parallel processing}
 

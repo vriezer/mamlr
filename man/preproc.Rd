@@ -4,7 +4,7 @@
 \alias{preproc}
 \title{Preprocess dfm data for use in modeling procedure}
 \usage{
-preproc(dfm_train, dfm_test = NULL, params)
+preproc(dfm_train, dfm_test = NULL, params, we_vectors)
 }
 \arguments{
 \item{dfm_train}{Training dfm}
@@ -12,6 +12,8 @@ preproc(dfm_train, dfm_test = NULL, params)
 \item{dfm_test}{Testing dfm if applicable, otherwise NULL}
 
 \item{params}{Row from grid with parameter optimization}
+
+\item{we_vectors}{Matrix with word embedding vectors}
 }
 \value{
 List with dfm_train and dfm_test, processed according to parameters in params

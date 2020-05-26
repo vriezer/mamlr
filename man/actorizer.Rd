@@ -4,8 +4,18 @@
 \alias{actorizer}
 \title{Updater function for elasticizer: Conduct actor searches}
 \usage{
-actorizer(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags,
-  es_super, ver, cores = 1)
+actorizer(
+  out,
+  localhost = F,
+  ids,
+  prefix,
+  postfix,
+  pre_tags,
+  post_tags,
+  es_super,
+  ver,
+  cores = 1
+)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}

@@ -4,9 +4,18 @@
 \alias{class_update}
 \title{Classifier function for use in combination with the elasticizer function as 'update' parameter (without brackets), see elasticizer documentation for more information}
 \usage{
-class_update(out, localhost = T, model_final, varname, text, words,
-  clean, ver, es_super = .rs.askForPassword("ElasticSearch WRITE"),
-  cores = 1)
+class_update(
+  out,
+  localhost = T,
+  model_final,
+  varname,
+  text,
+  words,
+  clean,
+  ver,
+  es_super = .rs.askForPassword("ElasticSearch WRITE"),
+  cores = 1
+)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}

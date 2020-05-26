@@ -4,7 +4,16 @@
 \alias{estimator}
 \title{Generate models and get classifications on test sets}
 \usage{
-estimator(row, grid, outer_folds, inner_folds, dfm, class_type, model)
+estimator(
+  row,
+  grid,
+  outer_folds,
+  inner_folds,
+  dfm,
+  class_type,
+  model,
+  we_vectors
+)
 }
 \arguments{
 \item{row}{Row number of current item in grid}
@@ -18,6 +27,8 @@ estimator(row, grid, outer_folds, inner_folds, dfm, class_type, model)
 \item{class_type}{Name of column in docvars() containing the classes}
 
 \item{model}{Model to use (currently only nb)}
+
+\item{we_vectors}{Matrix with word embedding vectors}
 }
 \value{
 Dependent on mode, if folds are included, returns true and predicted classes of test set, with parameters, model and model idf. When no folds, returns final model and idf values.

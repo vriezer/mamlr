@@ -4,8 +4,19 @@
 \alias{modelizer}
 \title{Generate a classification model}
 \usage{
-modelizer(dfm, outer_k, inner_k, class_type, opt_measure, country, grid,
-  seed, model, cores = 1)
+modelizer(
+  dfm,
+  outer_k,
+  inner_k,
+  class_type,
+  opt_measure,
+  country,
+  grid,
+  seed,
+  model,
+  we_vectors,
+  cores = 1
+)
 }
 \arguments{
 \item{dfm}{A quanteda dfm used to train and evaluate the model, should contain the vector with class labels in docvars}
@@ -26,10 +37,12 @@ modelizer(dfm, outer_k, inner_k, class_type, opt_measure, country, grid,
 
 \item{model}{Classification algorithm to use (currently only "nb" for Naïve Bayes using textmodel_nb)}
 
+\item{we_vectors}{Matrix with word embedding vectors}
+
 \item{cores}{Number of threads used for parallel processing using future_lapply, defaults to 1}
 }
 \value{
-An .Rds file in the current working directory (getwd()) with a list containing all relevant output
+A list containing all relevant output
 }
 \description{
 Generate a nested cross validated classification model based on a dfm with class labels as docvars

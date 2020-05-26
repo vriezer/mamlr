@@ -2,7 +2,7 @@
 % Please edit documentation in R/sentencizer.R
 \name{sentencizer}
 \alias{sentencizer}
-\title{Generate actor data frames (with sentiment) from database}
+\title{Generate sentence-level dataset with sentiment and actor presence}
 \usage{
 sentencizer(out, sent_dict = NULL, localhost = NULL, validation = F)
 }
@@ -10,13 +10,15 @@ sentencizer(out, sent_dict = NULL, localhost = NULL, validation = F)
 \item{out}{Data frame produced by elasticizer}
 
 \item{sent_dict}{Optional dataframe containing the sentiment dictionary and values. Words should be either in the "lem_u" column when they consist of lemma_upos pairs, or in the "lemma" column when they are just lemmas. The "prox" column should either contain word values, or 0s if not applicable.}
+
+\item{validation}{Boolean indicating whether human validation should be performed on sentiment scoring}
 }
 \value{
 No return value, data per batch is saved in an RDS file
 }
 \description{
-Generate actor data frames (with sentiment) from database
+Generate sentence-level dataset with sentiment and actor presence
 }
 \examples{
-sentencizer(out, sent_dict = NULL)
+sentencizer(out, sent_dict = NULL, validation = F)
 }

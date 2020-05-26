@@ -4,9 +4,14 @@
 \alias{ud_update}
 \title{Elasticizer update function: generate UDpipe output from base text}
 \usage{
-ud_update(out, localhost = T, udmodel,
+ud_update(
+  out,
+  localhost = T,
+  udmodel,
   es_super = .rs.askForPassword("ElasticSearch WRITE"),
-  cores = detectCores(), ver)
+  cores = detectCores(),
+  ver
+)
 }
 \arguments{
 \item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}

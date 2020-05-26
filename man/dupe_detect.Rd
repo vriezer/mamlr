@@ -4,8 +4,17 @@
 \alias{dupe_detect}
 \title{Get ids of duplicate documents that have a cosine similarity score higher than [threshold]}
 \usage{
-dupe_detect(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_super,
-  words, localhost = T, ver)
+dupe_detect(
+  row,
+  grid,
+  cutoff_lower,
+  cutoff_upper = 1,
+  es_pwd,
+  es_super,
+  words,
+  localhost = T,
+  ver
+)
 }
 \arguments{
 \item{row}{Row of grid to parse}
