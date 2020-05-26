@@ -57,9 +57,11 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
           sent = sent_sum/words,
           arousal = sent_words/words
         )
-      ## If there is no dictionary, create an "empty" ud_sent, with just sentence ids
+      ## If there is no dictionary, create a ud_sent, with just sentence ids and word counts per sentence
     } else {
-      ud_sent <- ud_sent %>% group_by(`_id`,sentence_id) %>% summarise()
+      ud_sent <- ud_sent %>%
+        group_by(`_id`,sentence_id) %>%
+        summarise(words = length(lemma))
     }
 
     ## Remove ud ouptut from source before further processing
@@ -113,16 +115,18 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
           text.sent = text.sent_sum/text.words,
           text.arousal = text.sent_words/text.words
         )
+
+    } else {
+      text_sent <- out %>%
+        summarise(
+          text.words = sum(words),
+          text.sentences = n()
+        )
+    }
       out <- out %>%
         summarise_all(list) %>%
         left_join(.,text_sent,by='_id') %>%
         left_join(.,metadata,by='_id')
-    } else {
-      ## If no sent_dict, summarise all and join with metadata (see top)
-      out <- out %>%
-        summarise_all(list) %>%
-        left_join(.,metadata,by='_id')
-    }
     return(out)
   }
   saveRDS(par_sent(1:nrow(out),out = out, sent_dict=sent_dict), file = paste0('df_out',as.numeric(as.POSIXct(Sys.time())),'.Rds'))
