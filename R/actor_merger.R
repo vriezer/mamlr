@@ -101,7 +101,6 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
       )
     ## Create actor metadata dataframe per active date (one row per day per actor)
     colnames(actors_meta) <- str_replace(colnames(actors_meta),'_source.','')
-    actors_meta <- actors_meta[-1128,]
     actors_meta_bydate <- actors_meta %>%
       mutate(
         startDate = as.Date(startDate),
