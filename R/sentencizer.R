@@ -1,6 +1,6 @@
-#' Generate actor data frames (with sentiment) from database
+#' Generate sentence-level dataset with sentiment and actor presence
 #'
-#' Generate actor data frames (with sentiment) from database
+#' Generate sentence-level dataset with sentiment and actor presence
 #' @param out Data frame produced by elasticizer
 #' @param sent_dict Optional dataframe containing the sentiment dictionary and values. Words should be either in the "lem_u" column when they consist of lemma_upos pairs, or in the "lemma" column when they are just lemmas. The "prox" column should either contain word values, or 0s if not applicable.
 #' @param validation Boolean indicating whether human validation should be performed on sentiment scoring
@@ -9,29 +9,38 @@
 #' @examples
 #' sentencizer(out, sent_dict = NULL, validation = F)
 #################################################################################################
-#################################### Aggregate actor results ################################
+#################################### Generate sentence-level dataset#############################
 #################################################################################################
 sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F) {
+  ## Despite the function name, parallel processing is not used, because it is slower
   par_sent <- function(row, out, sent_dict = NULL) {
     out <- out[row,]
+    ## Create df with article metadata (fields that are included in the elasticizer function)
     metadata <- out %>%
       select(`_id`,contains("_source"),-contains("computerCodes.actors"),-contains("ud"))
+
+    ## Unnest documents into individual words
     ud_sent <- out %>% select(`_id`,`_source.ud`) %>%
       unnest(cols = colnames(.)) %>%
       select(-one_of('exists')) %>%
       unnest(cols = colnames(.)) %>%
       filter(upos != 'PUNCT')
 
+    ## If there is a dictionary, apply it
     if (!is.null(sent_dict)) {
+      ## If the dictionary contains the column lem_u, assume lemma_upos format
       if ("lem_u" %in% colnames(sent_dict)) {
         ud_sent <- ud_sent %>%
           mutate(lem_u = str_c(lemma,'_',upos)) %>%
           left_join(sent_dict, by = 'lem_u')
+        ## If the dictionary contains the column lemma, assume simple lemma format
       } else if ("lemma" %in% colnames(sent_dict)) {
         ud_sent <- ud_sent %>%
           left_join(sent_dict, by = 'lemma') %>%
           mutate(lem_u = lemma)
       }
+
+      ## Group by sentences, and generate dictionary scores per sentence
       ud_sent <- ud_sent %>%
         group_by(`_id`,sentence_id) %>%
         mutate(
@@ -48,11 +57,15 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
           sent = sent_sum/words,
           arousal = sent_words/words
         )
+      ## If there is no dictionary, create an "empty" ud_sent, with just sentence ids
     } else {
       ud_sent <- ud_sent %>% group_by(`_id`,sentence_id) %>% summarise()
     }
+
+    ## Remove ud ouptut from source before further processing
     out <- select(out, -`_source.ud`)
 
+    ## If dictionary validation, return just the sentences that have been hand-coded
     if (validation == T) {
       codes_sent <- ud_sent %>%
         left_join(.,out, by='_id') %>%
@@ -61,9 +74,9 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
       return(codes_sent)
     }
 
-    ### Unnest out_row to individual actor ids
-
     if("_source.computerCodes.actorsDetail" %in% colnames(out)) {
+
+      ## If actor details in source, create vector of actor ids for each sentence
       out <- out %>%
         unnest(`_source.computerCodes.actorsDetail`) %>%
         # mutate(ids_list = ids) %>%
@@ -74,16 +87,19 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
           ids = list(ids)
         )
     } else {
+      ## If no actor details, keep one row per article and add a bogus sentence_id
       out <- out %>%
         group_by(`_id`) %>%
         summarise() %>%
         mutate(sentence_id = 1)
     }
 
-
+    ## Combine ud_sent with the source dataset
       out <- out %>%
         left_join(ud_sent,.,by = c('_id','sentence_id')) %>%
         group_by(`_id`)
+
+    ## If there is a sent_dict, generate sentiment scores on article level
     if(!is.null(sent_dict)) {
       text_sent <- out %>%
         summarise(
@@ -102,6 +118,7 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
         left_join(.,text_sent,by='_id') %>%
         left_join(.,metadata,by='_id')
     } else {
+      ## If no sent_dict, summarise all and join with metadata (see top)
       out <- out %>%
         summarise_all(list) %>%
         left_join(.,metadata,by='_id')
