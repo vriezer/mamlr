@@ -37,6 +37,7 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
   text_sent <- df %>%
     select(`_id`,starts_with("text."),-ends_with("sent_lemmas"))
   df <- df %>%
+    ungroup() %>%
     select(-ends_with("sent_lemmas"),-starts_with("text.")) %>%
     unnest(cols = colnames(.)) ## Unnest to sentence level
 
@@ -170,7 +171,8 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
         yearmonth = strftime(publication_date, format = '%Y%m'),
         yearmonthday = strftime(publication_date, format = '%Y%m%d'),
         yearweek = strftime(publication_date, format = "%Y%V")
-      )
+      ) %>%
+      ungroup()
     return(df)
   }
 }

@@ -126,7 +126,8 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
       out <- out %>%
         summarise_all(list) %>%
         left_join(.,text_sent,by='_id') %>%
-        left_join(.,metadata,by='_id')
+        left_join(.,metadata,by='_id') %>%
+        ungroup()
     return(out)
   }
   saveRDS(par_sent(1:nrow(out),out = out, sent_dict=sent_dict), file = paste0('df_out',as.numeric(as.POSIXct(Sys.time())),'.Rds'))
