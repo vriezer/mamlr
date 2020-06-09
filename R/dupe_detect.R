@@ -21,17 +21,8 @@
 dupe_detect <- function(row, grid, cutoff_lower, cutoff_upper = 1, es_pwd, es_super, words, localhost = T, ver) {
   params <- grid[row,]
   print(paste0('Parsing ',params$doctypes,' on ',params$dates ))
-  query <- paste0('{"query":
-                  {"bool": {"filter":[{"term":{"doctype": "',params$doctypes,'"}},
-                  {"range" : {
-                  "publication_date" : {
-                  "gte" : "',params$dates,'T00:00:00Z",
-                  "lt" :  "',params$dates+1,'T00:00:00Z"
-                  }
-                  }}]
-
-                  } } }')
-  out <- elasticizer(query, es_pwd = es_pwd, localhost= localhost)
+  query <- paste0('doctype:',params$doctypes,' && publication_date:',params$dates,' && !computerCodes._delete:1')
+  out <- elasticizer(query_string(query, fields = c('country','text','title','subtitle','teaser','preteaser')), es_pwd = es_pwd, localhost= localhost)
   if (class(out$hits$hits) != 'list') {
     dfm <- dfm_gen(out, text = "full", words = words, clean = T)
     if (sum(dfm[1,]) > 0) {
