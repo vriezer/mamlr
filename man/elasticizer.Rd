@@ -12,6 +12,7 @@ elasticizer(
   batch_size = 1024,
   max_batch = Inf,
   time_scroll = "5m",
+  dump = F,
   update = NULL,
   localhost = F,
   ...
@@ -31,6 +32,8 @@ elasticizer(
 \item{max_batch}{Maximum number batches to retrieve}
 
 \item{time_scroll}{Time to keep the scroll instance open (defaults to 5m, with a maximum of 500 allowed instances, so a maximum of 100 per minute)}
+
+\item{dump}{Boolean indicating whether the data frames should be returned, or dumped as .Rds files}
 
 \item{update}{When set, indicates an update function to use on each batch of 1000 articles}
 

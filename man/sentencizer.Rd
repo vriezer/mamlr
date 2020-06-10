@@ -9,7 +9,7 @@ sentencizer(out, sent_dict = NULL, localhost = NULL, validation = F)
 \arguments{
 \item{out}{Data frame produced by elasticizer}
 
-\item{sent_dict}{Optional dataframe containing the sentiment dictionary and values. Words should be either in the "lem_u" column when they consist of lemma_upos pairs, or in the "lemma" column when they are just lemmas. The "prox" column should either contain word values, or 0s if not applicable.}
+\item{sent_dict}{Optional dataframe containing the sentiment dictionary and values. Words should be either in the "lem_u" column when they consist of lemma_upos pairs, or in the "lemma" column when they are just lemmas. The "prox" column should either contain word values, or 1 for all words if there are no values.}
 
 \item{validation}{Boolean indicating whether human validation should be performed on sentiment scoring}
 }

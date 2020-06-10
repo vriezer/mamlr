@@ -8,6 +8,7 @@
 #' @param batch_size Batch size
 #' @param max_batch Maximum number batches to retrieve
 #' @param time_scroll Time to keep the scroll instance open (defaults to 5m, with a maximum of 500 allowed instances, so a maximum of 100 per minute)
+#' @param dump Boolean indicating whether the data frames should be returned, or dumped as .Rds files
 #' @param update When set, indicates an update function to use on each batch of 1000 articles
 #' @param local Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)
 #' @param ... Parameters passed on to the update function
@@ -19,7 +20,7 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", update = NULL, localhost = F, ...){
+elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
@@ -141,6 +142,8 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
     if (length(update) > 0) {
       scroll_clear(conn = conn, x = json$`_scroll_id`)
       return("Done updating")
+    } else if (dump) {
+      saveRDS(out, file = paste0('df_raw',as.numeric(as.POSIXct(Sys.time())),'.Rds'))
     } else {
       scroll_clear(conn = conn, x = json$`_scroll_id`)
       return(out)
