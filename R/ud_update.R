@@ -2,15 +2,13 @@
 #'
 #' Elasticizer update function: generate UDpipe output from base text
 #' @param out Does not need to be defined explicitly! (is already parsed in the elasticizer function)
-#' @param localhost Defaults to false. When true, connect to a local Elasticsearch instance on the default port (9200)
 #' @param udmodel UDpipe model to use
-#' @param es_super Password for write access to ElasticSearch
-#' @param cores Number of cores to use for parallel processing, defaults to detectCores() (all cores available)
 #' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
+#' @param file Filename for output (ud_ is automatically prepended)
 #' @return A vector of 1's indicating the success of each update call
 #' @export
 #' @examples
-#' ud_update(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores())
+#' ud_update(out, udmodel, ver, file)
 #'
 
 # punct_check <- function(str) {
@@ -19,30 +17,26 @@
 #   }
 # }
 
-ud_update <- function(out, localhost = T, udmodel, es_super = .rs.askForPassword("ElasticSearch WRITE"), cores = detectCores(), ver) {
+ud_update <- function(out, udmodel, ver) {
   out <- mamlr:::out_parser(out, field = '_source', clean = F)
-  par_proc <- function(row, out, udmodel) {
-    doc <- out[row,]
-    ud <- as.data.frame(udpipe(udmodel, x = doc$merged, parser = "default", doc_id = doc$`_id`)) %>%
-      group_by(doc_id) %>%
-      summarise(
-        sentence_id = list(as.integer(sentence_id)),
-        token_id = list(as.integer(token_id)),
-        lemma = list(as.character(lemma)),
-        upos = list(as.character(upos)),
-        feats = list(as.character(feats)),
-        head_token_id = list(as.integer(head_token_id)),
-        dep_rel = list(as.character(dep_rel)),
-        start = list(as.integer(start)),
-        end = list(as.integer(end)),
-        exists = list(TRUE)
-     )
-    return(ud)
-  }
-  ud <- bind_rows(mclapply(seq(1,length(out[[1]]),1), par_proc, out = out, udmodel=udmodel, mc.cores = cores))
+  ud <- as.data.frame(udpipe(udmodel, x = out$merged, parser = "default", doc_id = out$`_id`)) %>%
+    group_by(doc_id) %>%
+    summarise(
+      sentence_id = list(as.integer(sentence_id)),
+      token_id = list(as.integer(token_id)),
+      lemma = list(as.character(lemma)),
+      upos = list(as.character(upos)),
+      feats = list(as.character(feats)),
+      head_token_id = list(as.integer(head_token_id)),
+      dep_rel = list(as.character(dep_rel)),
+      start = list(as.integer(start)),
+      end = list(as.integer(end)),
+      exists = list(TRUE)
+   )
   bulk <- apply(ud, 1, bulk_writer, varname = 'ud', type = 'set', ver = ver)
-  res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
-  return(res)
+  saveRDS(bulk, file = paste0('ud_',file))
+  # res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
+  return()
 }
 
 #### Old code ####

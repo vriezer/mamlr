@@ -4,7 +4,7 @@
 \alias{dfm_gen}
 \title{Generates dfm from ElasticSearch output}
 \usage{
-dfm_gen(out, words = "999", text = "lemmas", clean, cores = 1, tolower = T)
+dfm_gen(out, words = "999", text = "lemmas", clean, tolower = T)
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}
@@ -14,8 +14,6 @@ dfm_gen(out, words = "999", text = "lemmas", clean, cores = 1, tolower = T)
 \item{text}{String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags}
 
 \item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code).}
-
-\item{cores}{Number of cores to use for parallel processing, defaults to cores (all cores available)}
 
 \item{tolower}{Boolean indicating whether dfm features should be lowercased}
 }

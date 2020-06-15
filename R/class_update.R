@@ -20,7 +20,7 @@
 #################################################################################################
 class_update <- function(out, localhost = T, model_final, varname, text, words, clean, ver, es_super = .rs.askForPassword('ElasticSearch WRITE'), cores = 1) {
   print('updating')
-  dfm <- dfm_gen(out, text = text, words = words, clean = clean, cores = cores)
+  dfm <- dfm_gen(out, text = text, words = words, clean = clean)
   if (!is.null(model_final$idf)) {
     dfm <- dfm_weight(dfm, weights = model_final$idf)
   }

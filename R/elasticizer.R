@@ -143,7 +143,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       scroll_clear(conn = conn, x = json$`_scroll_id`)
       return("Done updating")
     } else if (dump) {
-      saveRDS(out, file = paste0('df_raw',as.numeric(as.POSIXct(Sys.time())),'.Rds'))
+      saveRDS(out, file = paste0('batch_',batch*batch_size,'.Rds'))
     } else {
       scroll_clear(conn = conn, x = json$`_scroll_id`)
       return(out)
