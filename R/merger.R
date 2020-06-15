@@ -14,6 +14,7 @@
 ## Only merging lemmas for now, feature selection has no impact on junk classification
 merger <- function(out, text, clean) {
   df <- unnest(out, cols = '_source.ud') %>%
+    select(`_id`,lemma,upos) %>%
     unnest(cols = c('lemma','upos')) %>%
     # This line is added in the new merger function, in the old merger function this would result in the following:
     # 1: when using ud, it would result in the string "NA" being present in place of the faulty lemma
