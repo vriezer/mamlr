@@ -17,7 +17,7 @@
 #   }
 # }
 
-ud_update <- function(out, udmodel, ver) {
+ud_update <- function(out, udmodel, ver, file) {
   out <- mamlr:::out_parser(out, field = '_source', clean = F)
   ud <- as.data.frame(udpipe(udmodel, x = out$merged, parser = "default", doc_id = out$`_id`)) %>%
     group_by(doc_id) %>%
