@@ -108,6 +108,9 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
     hits <- length(json$hits$hits)
     batch <- 1
     print(paste0('Processing documents ',batch*batch_size-batch_size,' through ',batch*batch_size,' out of ',total,' documents.'))
+    if (dump) {
+      saveRDS(out, file = paste0('batch_',batch*batch_size,'.Rds'))
+    }
     if (length(update) > 0){
       update(out, localhost = localhost, ...)
     }
@@ -134,6 +137,8 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
         if (length(update) > 0){
           out <-  jsonlite:::flatten(json$hits$hits)
           update(out, localhost = localhost, ...)
+        } else if (dump) {
+          saveRDS(jsonlite:::flatten(json$hits$hits), file = paste0('batch_',batch*batch_size,'.Rds'))
         } else {
           out <- bind_rows(out, jsonlite:::flatten(json$hits$hits))
         }
@@ -143,7 +148,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
       scroll_clear(conn = conn, x = json$`_scroll_id`)
       return("Done updating")
     } else if (dump) {
-      saveRDS(out, file = paste0('batch_',batch*batch_size,'.Rds'))
+      return("Dumping complete")
     } else {
       scroll_clear(conn = conn, x = json$`_scroll_id`)
       return(out)

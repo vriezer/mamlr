@@ -24,43 +24,50 @@ out_parser <- function(out, field, clean = F) {
   par_parser <- function(row, out, field, clean) {
     doc <- out[row,]
     if (field == 'highlight') {
-      doc <- replace(doc, doc=="NULL", NA)
-      ### Replacing empty highlights with source text (to have the exact same text for udpipe to process)
-      doc$highlight.title[is.na(doc$highlight.title)] <- doc$`_source.title`[is.na(doc$highlight.title)]
-      doc$highlight.text[is.na(doc$highlight.text)] <- doc$`_source.text`[is.na(doc$highlight.text)]
-      doc$highlight.teaser[is.na(doc$highlight.teaser)] <- doc$`_source.teaser`[is.na(doc$highlight.teaser)]
-      doc$highlight.subtitle[is.na(doc$highlight.subtitle)] <- doc$`_source.subtitle`[is.na(doc$highlight.subtitle)]
-      doc$highlight.preteaser[is.na(doc$highlight.preteaser)] <- doc$`_source.preteaser`[is.na(doc$highlight.preteaser)]
 
       doc <- doc %>%
-        mutate(highlight.title = str_replace_na(highlight.title, replacement = '')) %>%
-        mutate(highlight.subtitle = str_replace_na(highlight.subtitle, replacement = '')) %>%
-        mutate(highlight.preteaser = str_replace_na(highlight.preteaser, replacement = '')) %>%
-        mutate(highlight.teaser = str_replace_na(highlight.teaser, replacement = '')) %>%
-        mutate(highlight.text = str_replace_na(highlight.text, replacement = ''))
-      doc$merged <- str_c(doc$highlight.title,
-                          doc$highlight.subtitle,
-                          doc$highlight.preteaser,
-                          doc$highlight.teaser,
-                          doc$highlight.text,
-                          '',
-                          sep = ". ")
+        unnest(cols = starts_with("highlight")) %>%
+      mutate(across(starts_with("highlight"), na_if, "NULL")) %>%
+        mutate(highlight.title = coalesce(highlight.title, `_source.title`),
+               highlight.subtitle = coalesce(highlight.subtitle, `_source.subtitle`),
+               highlight.preteaser = coalesce(highlight.preteaser, `_source.preteaser`),
+               highlight.teaser = coalesce(highlight.teaser, `_source.teaser`),
+               highlight.text = coalesce(highlight.text, `_source.text`)
+        ) %>%
+        mutate(highlight.title = str_replace_na(highlight.title, replacement = ''),
+               highlight.subtitle = str_replace_na(highlight.subtitle, replacement = ''),
+               highlight.preteaser = str_replace_na(highlight.preteaser, replacement = ''),
+               highlight.teaser = str_replace_na(highlight.teaser, replacement = ''),
+               highlight.text = str_replace_na(highlight.text, replacement = '')
+        ) %>%
+        mutate(
+          merged = str_c(highlight.title,
+                         highlight.subtitle,
+                         highlight.preteaser,
+                         highlight.teaser,
+                         highlight.text,
+                         '',
+                         sep = ". ")
+        )
     }
 
     if (field == '_source') {
       doc <- doc %>%
-        mutate(`_source.title` = str_replace_na(`_source.title`, replacement = '')) %>%
-        mutate(`_source.subtitle` = str_replace_na(`_source.subtitle`, replacement = '')) %>%
-        mutate(`_source.preteaser` = str_replace_na(`_source.preteaser`, replacement = '')) %>%
-        mutate(`_source.teaser` = str_replace_na(`_source.teaser`, replacement = '')) %>%
-        mutate(`_source.text` = str_replace_na(`_source.text`, replacement = ''))
-      doc$merged <- str_c(doc$`_source.title`,
-                          doc$`_source.subtitle`,
-                          doc$`_source.preteaser`,
-                          doc$`_source.teaser`,
-                          doc$`_source.text`,
-                          '',
-                          sep = ". ")
+        mutate(`_source.title` = str_replace_na(`_source.title`, replacement = ''),
+               `_source.subtitle` = str_replace_na(`_source.subtitle`, replacement = ''),
+               `_source.preteaser` = str_replace_na(`_source.preteaser`, replacement = ''),
+               `_source.teaser` = str_replace_na(`_source.teaser`, replacement = ''),
+               `_source.text` = str_replace_na(`_source.text`, replacement = '')
+               ) %>%
+      mutate(
+        merged = str_c(`_source.title`,
+                       `_source.subtitle`,
+                       `_source.preteaser`,
+                       `_source.teaser`,
+                       `_source.text`,
+                       '',
+                       sep = ". ")
+      )
     }
 
     ### Use correct interpunction, by inserting a '. ' at the end of every text field, then removing any duplicate occurences

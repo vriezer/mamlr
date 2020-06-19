@@ -15,7 +15,7 @@
 #################################################################################################
 query_gen_actors <- function(actor, country, pre_tags, post_tags) {
   generator <- function(country, startdate, enddate, querystring, pre_tags, post_tags, actorid) {
-    return(paste0('{"_source": ["ud"],
+    return(paste0('{"_source": ["ud","title","subtitle","preteaser","teaser","text"],
     "query":
                     {"bool": {
                       "filter":[

@@ -2,24 +2,24 @@
 % Please edit documentation in R/ud_update.R
 \name{ud_update}
 \alias{ud_update}
-\title{Elasticizer update function: generate UDpipe output from base text}
+\title{Generate UDpipe output from base text}
 \usage{
-ud_update(out, udmodel, ver)
+ud_update(file, wd, ud_file, ver)
 }
 \arguments{
-\item{out}{Does not need to be defined explicitly! (is already parsed in the elasticizer function)}
+\item{file}{Filename of file to read in, also used for generating output file name}
 
-\item{udmodel}{UDpipe model to use}
+\item{wd}{Working directory where *file*s can be found}
+
+\item{ud_file}{Filename of udpipe model to use, should be in *wd*}
 
 \item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
-
-\item{file}{Filename for output (ud_ is automatically prepended)}
 }
 \value{
 A vector of 1's indicating the success of each update call
 }
 \description{
-Elasticizer update function: generate UDpipe output from base text
+Generate UDpipe output from base text
 }
 \examples{
 ud_update(out, udmodel, ver, file)

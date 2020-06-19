@@ -13,8 +13,7 @@ actorizer(
   pre_tags,
   post_tags,
   es_super,
-  ver,
-  cores = 1
+  ver
 )
 }
 \arguments{
@@ -31,8 +30,6 @@ actorizer(
 \item{es_super}{Password for write access to ElasticSearch}
 
 \item{ver}{Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')}
-
-\item{cores}{Number of cores to use for parallel processing, defaults to cores (all cores available)}
 
 \item{identifier}{String used to mark highlights. Should be a lowercase string}
 }

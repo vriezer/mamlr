@@ -1,10 +1,10 @@
-#' Elasticizer update function: generate UDpipe output from base text
+#' Generate UDpipe output from base text
 #'
-#' Elasticizer update function: generate UDpipe output from base text
-#' @param out Does not need to be defined explicitly! (is already parsed in the elasticizer function)
-#' @param udmodel UDpipe model to use
+#' Generate UDpipe output from base text
+#' @param file Filename of file to read in, also used for generating output file name
+#' @param wd Working directory where *file*s can be found
+#' @param ud_file Filename of udpipe model to use, should be in *wd*
 #' @param ver Short string (preferably a single word/sequence) indicating the version of the updated document (i.e. for a udpipe update this string might be 'udV2')
-#' @param file Filename for output (ud_ is automatically prepended)
 #' @return A vector of 1's indicating the success of each update call
 #' @export
 #' @examples
@@ -17,9 +17,11 @@
 #   }
 # }
 
-ud_update <- function(out, udmodel, ver, file) {
-  out <- mamlr:::out_parser(out, field = '_source', clean = F)
-  ud <- as.data.frame(udpipe(udmodel, x = out$merged, parser = "default", doc_id = out$`_id`)) %>%
+ud_update <- function(file, wd, ud_file, ver) {
+  out <- readRDS(str_c(wd,'/',file)) %>%
+    out_parser(., field = '_source', clean = F)
+  ud_model <- udpipe_load_model(file = str_c(wd,'/',ud_file))
+  ud <- as.data.frame(udpipe(ud_model, x = out$merged, parser = "default", doc_id = out$`_id`)) %>%
     group_by(doc_id) %>%
     summarise(
       sentence_id = list(as.integer(sentence_id)),
@@ -34,7 +36,7 @@ ud_update <- function(out, udmodel, ver, file) {
       exists = list(TRUE)
    )
   bulk <- apply(ud, 1, bulk_writer, varname = 'ud', type = 'set', ver = ver)
-  saveRDS(bulk, file = paste0('ud_',file))
+  saveRDS(bulk, file = str_c(wd,'/ud_',file))
   # res <- elastic_update(bulk, es_super = es_super, localhost = localhost)
   return()
 }
