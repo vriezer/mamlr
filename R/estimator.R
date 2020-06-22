@@ -8,6 +8,7 @@
 #' @param dfm DFM containing labeled documents
 #' @param class_type Name of column in docvars() containing the classes
 #' @param model Model to use (currently only nb)
+#' @param we_vectors Matrix with word embedding vectors
 #' @return Dependent on mode, if folds are included, returns true and predicted classes of test set, with parameters, model and model idf. When no folds, returns final model and idf values.
 #' @export
 #' @examples
@@ -17,7 +18,7 @@
 #################################################################################################
 
 ### Classification function
-estimator <- function (row, grid, outer_folds, inner_folds, dfm, class_type, model) {
+estimator <- function (row, grid, outer_folds, inner_folds, dfm, class_type, model, we_vectors) {
   # Get parameters for current iteration
   params <- grid[row,]
 
@@ -41,26 +42,43 @@ estimator <- function (row, grid, outer_folds, inner_folds, dfm, class_type, mod
     dfm_train <- dfm
   }
 
-  if (exists("final")) {
-    preproc_dfm <- preproc(dfm_train, NULL, params)
-    dfm_train <- preproc_dfm$dfm_train
+  dfm_train <- dfm_trim(dfm_train, min_termfreq = 1, min_docfreq = 0)
+  if (params$tfidf) {
+    idf <- docfreq(dfm_train, scheme = "inverse", base = 10, smoothing = 0, k = 0, threshold = 0)
+    dfm_train <- dfm_weight(dfm_train, weights = idf)
+    if (!is.null(dfm_test)) {
+      dfm_test <- dfm_weight(dfm_test, weights = idf)
+    }
   } else {
-    preproc_dfm <- preproc(dfm_train, dfm_test, params)
-    dfm_train <- preproc_dfm$dfm_train
-    dfm_test <- preproc_dfm$dfm_test
+    idf <- NULL
   }
-  idf <- preproc_dfm$idf
+
+  if (!is.null(params$feat_percentiles) && !is.null(params$feat_measures)) {
+
+    # Keeping unique words that are important to one or more categories (see textstat_keyness and feat_select)
+    words <- unique(unlist(lapply(unique(docvars(dfm_train, params$class_type)),
+                                  feat_select,
+                                  dfm = dfm_train,
+                                  class_type = params$class_type,
+                                  percentile = params$feat_percentiles,
+                                  measure = params$feat_measures
+    )))
+    dfm_train <- dfm_keep(dfm_train, words, valuetype="fixed", verbose=F)
+    if (!is.null(dfm_test)) {
+      dfm_test <- dfm_keep(dfm_test, words, valuetype="fixed", verbose=F)
+    }
+  }
 
   if (model == "nb") {
     text_model <- textmodel_nb(dfm_train, y = docvars(dfm_train, class_type), smooth = .001, prior = "uniform", distribution = "multinomial")
   }
   if (model == "svm") {
-    text_model <- svm(x=dfm_train, y=as.factor(docvars(dfm_train, class_type)), type = "C-classification", kernel = params$kernel, gamma = params$gamma, cost = params$cost, epsilon = params$epsilon)
+    text_model <- svm(x=as.matrix(train_data), y=as.factor(docvars(dfm_train, class_type)), type = "C-classification", kernel = params$kernel, gamma = params$gamma, cost = params$cost, epsilon = params$epsilon)
   }
-  if (model == 'nnet') {
-    idC <- class.ind(as.factor(docvars(dfm_train, class_type)))
-    text_model <- nnet(dfm_train, idC, decay = params$decay, size=params$size, maxit=params$maxit, softmax=T, reltol = params$reltol, MaxNWts = params$size*(length(dfm_train@Dimnames$features)+1)+(params$size*2)+2)
-  }
+  # if (model == 'nnet') {
+  #   idC <- class.ind(as.factor(docvars(dfm_train, class_type)))
+  #   text_model <- nnet(dfm_train, idC, decay = params$decay, size=params$size, maxit=params$maxit, softmax=T, reltol = params$reltol, MaxNWts = params$size*(length(dfm_train@Dimnames$features)+1)+(params$size*2)+2)
+  # }
   ### Add more if statements for different models
 
   # If training on whole dataset, return final model, and idf values from dataset

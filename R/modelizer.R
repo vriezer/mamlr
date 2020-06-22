@@ -16,8 +16,9 @@
 #' @param grid Data frame providing all possible combinations of hyperparameters and feature selection parameters for a given model (grid search)
 #' @param seed Integer to use as seed for random number generation, ensures replicability
 #' @param model Classification algorithm to use (currently only "nb" for Naïve Bayes using textmodel_nb)
+#' @param we_vectors Matrix with word embedding vectors
 #' @param cores Number of threads used for parallel processing using future_lapply, defaults to 1
-#' @return An .Rds file in the current working directory (getwd()) with a list containing all relevant output
+#' @return A list containing all relevant output
 #' @export
 #' @examples
 #' modelizer(dfm, outer_k, inner_k, class_type, opt_measure, country, grid, seed, model, cores = 1)
@@ -25,9 +26,9 @@
 #################################### Function to generate classification models #################
 #################################################################################################
 
-modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, grid, seed, model, cores = 1) {
+modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, grid, seed, model, we_vectors, cores = 1) {
   ## Generate list containing outer folds row numbers, inner folds row numbers, and grid for model building
-  folds <- cv_generator(outer_k,inner_k = inner_k, dfm = dfm, class_type = class_type, grid = grid, seed = seed)
+  folds <- cv_generator(outer_k,inner_k = inner_k, vec = docvars(dfm, class_type), grid = grid, seed = seed)
   inner_grid <- folds$grid
   outer_folds <- folds$outer_folds
   inner_folds <- folds$inner_folds
@@ -42,6 +43,7 @@ modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, g
                                    inner_folds = inner_folds,
                                    dfm = dfm,
                                    class_type = class_type,
+                                   we_vectors = we_vectors,
                                    model = model) %>%
     future_lapply(.,metric_gen) %>% # Generate model performance metrics for each grid row
     bind_rows(.)
@@ -66,12 +68,13 @@ modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, g
                                    inner_folds = NULL,
                                    dfm = dfm,
                                    class_type = class_type,
+                                   we_vectors = we_vectors,
                                    model = model) %>%
     future_lapply(., metric_gen) %>% # Generate performance metrics for each row in outer_grid
     bind_rows(.)
 
   # Create (inner) folds for parameter optimization on the entire dataset
-  final_folds <- cv_generator(NULL,inner_k = inner_k, dfm = dfm, class_type = class_type, grid = grid, seed = seed)
+  final_folds <- cv_generator(NULL,inner_k = inner_k, vec = docvars(dfm, class_type), grid = grid, seed = seed)
   final_grid <- final_folds$grid
   final_inner <- final_folds$inner_folds
 
@@ -82,6 +85,7 @@ modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, g
                                    inner_folds = final_inner,
                                    dfm = dfm,
                                    class_type = class_type,
+                                   we_vectors = we_vectors,
                                    model = model) %>%
     future_lapply(.,metric_gen) %>% # Generate performance metrics for each row in final_grid
     bind_rows(.)
@@ -118,12 +122,6 @@ modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, g
                  country = country,
                  class_type = class_type)
 
-  # Set name for output .Rds file
-  filename <- paste0(getwd(),'/',country,'_',model,'_',class_type,'_',opt_measure,'_',Sys.time(),'.Rds')
-
-  # Save RDS file with output
-  saveRDS(output, file = filename)
-
-  # Return ouput RDS filename
-  return(filename)
+  # Return ouput
+  return(output)
 }
