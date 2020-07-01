@@ -14,126 +14,114 @@
 #' @examples
 #' actorizer(out, localhost = F, ids, prefix, postfix, identifier, es_super)
 actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_tags, es_super, ver) {
-  sentencizer <- function(row, out, ids, prefix, postfix, pre_tags, post_tags, pre_tags_regex, post_tags_regex) {
-    doc <- out[row,]
-    if (sum(nchar(doc$merged) > 990000)) {
-      stop("One or more documents in this batch exceed 990000 characters")
-    }
-    # Extracting ud output from document
-    ud <- doc %>%
-      select(`_id`,`_source.ud`, merged) %>%
-      unnest(cols = c("_source.ud")) %>%
-      select(`_id`,lemma,start,end, sentence_id,merged) %>%
-      unnest(cols = colnames(.))
-
-    sentences <- ud %>%
-      group_by(`_id`, sentence_id) %>%
-      summarise(
-        sentence_start = min(start),
-        sentence_end = max(end)
-      ) %>%
-      mutate(
-        sentence_count = n()
-      )
-
-    hits <- left_join(ud, markers, by='_id') %>%
-      mutate(
-        actor = case_when(
-          start <= marker_start  & end >= marker_start ~ T,
-          T ~ F
-        )
-      ) %>%
-      select(`_id`, sentence_id, start, end,actor,merged) %>%
-      filter(actor) %>%
-      group_by(`_id`,sentence_id) %>%
-      summarise(
-        actor = any(actor),
-        actor_start = I(list(start)),
-        actor_end = I(list(end)),
-        n_markers = length(start),
-        merged = first(merged)
-      ) %>%
-      left_join(.,sentences, by=c('_id','sentence_id')) %>%
-      ungroup %>%
-      arrange(`_id`,sentence_id) %>%
-      group_by(`_id`) %>%
-      mutate(n_markers = cumsum(n_markers)) %>%
-      mutate(
-        sentence_start_tags = sentence_start+((nchar(pre_tags)+nchar(post_tags))*(lag(n_markers, default = 0))),
-        sentence_end_tags = sentence_end+((nchar(pre_tags)+nchar(post_tags))*(n_markers))
-      ) %>%
-      mutate(
-        sentence = paste0(' ',str_sub(merged, sentence_start_tags, sentence_end_tags),' ')
-      ) %>%
-      select(-merged) %>%
-      ungroup()
-    # Conducting regex filtering on matches only when there is a prefix and/or postfix to apply
-    if (!is.na(prefix) || !is.na(postfix)) {
-      ### If no pre or postfixes, match *not nothing* i.e. anything
-      if (is.na(prefix)) {
-        prefix = '$^'
-      }
-      if (is.na(postfix)) {
-        postfix = '$^'
-      }
-      hits <- hits %>%
-      filter(
-        !str_detect(sentence, paste0(post_tags_regex,'(',postfix,')')) & !str_detect(sentence, paste0('(',prefix,')',pre_tags_regex))
-      )
-    }
-
-    hits <- hits %>%
-      group_by(`_id`) %>%
-      summarise(
-        sentence_id = list(as.integer(sentence_id)),
-        sentence_start = list(sentence_start),
-        sentence_end = list(sentence_end),
-        actor_start = I(list(unlist(actor_start))), # List of actor ud token start positions
-        actor_end = I(list(unlist(actor_end))), # List of actor ud token end positions
-        occ = length(unique(unlist(sentence_id))), # Number of sentences in which actor occurs
-        first = min(unlist(sentence_id)), # First sentence in which actor is mentioned
-        ids = I(list(ids)),
-        sentence_count = first(sentence_count)# List of actor ids
-      ) %>%
-      mutate(
-        prom = occ/sentence_count, # Relative prominence of actor in article (number of occurences/total # sentences)
-        rel_first = 1-(first/sentence_count), # Relative position of first occurence at sentence level
-      ) %>%
-      select(`_id`:occ, prom,rel_first,first,ids)
-    return(hits)
-
-  }
-  out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
   offsetter <- function(x, pre_tags, post_tags) {
     return(as.list(as.data.frame(x-((row(x)-1)*(nchar(pre_tags)+nchar(post_tags))))))
   }
+
+  out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
+
   prefix[prefix==''] <- NA
   postfix[postfix==''] <- NA
   pre_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", pre_tags)
   post_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", post_tags)
-  out$markers <- future_lapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags)
+  out$markers <- lapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags)
   markers <- out %>%
     select(`_id`,markers) %>%
     unnest_wider(markers) %>%
     rename(marker_start = start, marker_end = end) %>%
     unnest(colnames(.))
 
-  # ids <- fromJSON(ids)
-  updates <- sentencizer(1:1024,
-                                out = out,
-                                ids = ids,
-                                postfix = postfix,
-                                prefix=prefix,
-                                pre_tags_regex = pre_tags_regex,
-                                pre_tags = pre_tags,
-                                post_tags_regex = post_tags_regex,
-                                post_tags = post_tags)
-  if (nrow(updates) == 0) {
+  if (sum(nchar(out$merged) > 990000) > 0) {
+    stop("One or more documents in this batch exceed 990000 characters")
+  }
+  # Extracting ud output from document
+  ud <- out %>%
+    select(`_id`,`_source.ud`, merged) %>%
+    unnest(cols = c("_source.ud")) %>%
+    select(`_id`,lemma,start,end, sentence_id,merged) %>%
+    unnest(cols = colnames(.))
+
+  sentences <- ud %>%
+    group_by(`_id`, sentence_id) %>%
+    summarise(
+      sentence_start = min(start),
+      sentence_end = max(end)
+    ) %>%
+    mutate(
+      sentence_count = n()
+    )
+
+  hits <- left_join(ud, markers, by='_id') %>%
+    mutate(
+      actor = case_when(
+        start <= marker_start  & end >= marker_start ~ T,
+        T ~ F
+      )
+    ) %>%
+    select(`_id`, sentence_id, start, end,actor,merged) %>%
+    filter(actor) %>%
+    group_by(`_id`,sentence_id) %>%
+    summarise(
+      actor = any(actor),
+      actor_start = I(list(start)),
+      actor_end = I(list(end)),
+      n_markers = length(start),
+      merged = first(merged)
+    ) %>%
+    left_join(.,sentences, by=c('_id','sentence_id')) %>%
+    ungroup %>%
+    arrange(`_id`,sentence_id) %>%
+    group_by(`_id`) %>%
+    mutate(n_markers = cumsum(n_markers)) %>%
+    mutate(
+      sentence_start_tags = sentence_start+((nchar(pre_tags)+nchar(post_tags))*(lag(n_markers, default = 0))),
+      sentence_end_tags = sentence_end+((nchar(pre_tags)+nchar(post_tags))*(n_markers))
+    ) %>%
+    mutate(
+      sentence = paste0(' ',str_sub(merged, sentence_start_tags, sentence_end_tags),' ')
+    ) %>%
+    select(-merged) %>%
+    ungroup()
+  # Conducting regex filtering on matches only when there is a prefix and/or postfix to apply
+  if (!is.na(prefix) || !is.na(postfix)) {
+    ### If no pre or postfixes, match *not nothing* i.e. anything
+    if (is.na(prefix)) {
+      prefix = '$^'
+    }
+    if (is.na(postfix)) {
+      postfix = '$^'
+    }
+    hits <- hits %>%
+      filter(
+        !str_detect(sentence, paste0(post_tags_regex,'(',postfix,')')) & !str_detect(sentence, paste0('(',prefix,')',pre_tags_regex))
+      )
+  }
+
+  hits <- hits %>%
+    group_by(`_id`) %>%
+    summarise(
+      sentence_id = list(as.integer(sentence_id)),
+      sentence_start = list(sentence_start),
+      sentence_end = list(sentence_end),
+      actor_start = I(list(unlist(actor_start))), # List of actor ud token start positions
+      actor_end = I(list(unlist(actor_end))), # List of actor ud token end positions
+      occ = length(unique(unlist(sentence_id))), # Number of sentences in which actor occurs
+      first = min(unlist(sentence_id)), # First sentence in which actor is mentioned
+      ids = I(list(ids)),
+      sentence_count = first(sentence_count)# List of actor ids
+    ) %>%
+    mutate(
+      prom = occ/sentence_count, # Relative prominence of actor in article (number of occurrences/total # sentences)
+      rel_first = 1-(first/sentence_count), # Relative position of first occurrence at sentence level
+    ) %>%
+    select(`_id`:occ, prom,rel_first,first,ids)
+
+  if (nrow(hits) == 0) {
     print("Nothing to update for this batch")
     return(NULL)
   } else {
-    bulk <- apply(updates, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
-    bulk <- c(bulk,apply(updates[c(1,11)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
+    bulk <- apply(hits, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
+    bulk <- c(bulk,apply(hits[c(1,11)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
     return(elastic_update(bulk, es_super = es_super, localhost = localhost))
   }
 

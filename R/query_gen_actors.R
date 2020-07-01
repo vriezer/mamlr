@@ -136,8 +136,8 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
 
   ### Query generation for party searches
   if (actor$`_source.function` == "Party") {
-    actor$`_source.startDate` <- "2000-01-01"
-    actor$`_source.endDate` <- "2099-01-01"
+    # actor$`_source.startDate` <- "2000-01-01"
+    # actor$`_source.endDate` <- "2099-01-01"
     if (nchar(actor$`_source.partyNameSearchShort`[[1]]) > 0) {
       # If uk, no or dk, search for both regular abbreviations, and genitive forms
       if (country == "uk" | country == "no" | country == "dk") {
@@ -167,7 +167,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
       ids <- str_c(actor$`_source.partyId`,'_f')
       actorid <- str_c(actor$`_source.partyId`,'_f')
       query <- generator(country, actor$`_source.startDate`, actor$`_source.endDate`, query_string, pre_tags, post_tags, actorid)
-      if (country == 'uk') {
+      if (country == 'uk' | country == 'nl' | country == 'be') {
         df2 <- data.frame(query = query, ids = I(ids), prefix = actor$`_source.notPrecededBy`, postfix = actor$`_source.notFollowedBy`, stringsAsFactors = F)
       } else {
         df2 <- data.frame(query = query, ids = I(ids), prefix = NA, postfix = NA, stringsAsFactors = F)
