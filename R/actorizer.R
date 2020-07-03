@@ -89,30 +89,28 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
         !str_detect(sentence, paste0(post_tags_regex,'(',postfix,')')) & !str_detect(sentence, paste0('(',prefix,')',pre_tags_regex))
       )
   }
-
-  hits <- hits %>%
-    group_by(`_id`) %>%
-    summarise(
-      sentence_id = list(as.integer(sentence_id)),
-      sentence_start = list(sentence_start),
-      sentence_end = list(sentence_end),
-      actor_start = I(list(unlist(actor_start))), # List of actor ud token start positions
-      actor_end = I(list(unlist(actor_end))), # List of actor ud token end positions
-      occ = length(unique(unlist(sentence_id))), # Number of sentences in which actor occurs
-      first = min(unlist(sentence_id)), # First sentence in which actor is mentioned
-      ids = I(list(ids)),
-      sentence_count = first(sentence_count)# List of actor ids
-    ) %>%
-    mutate(
-      prom = occ/sentence_count, # Relative prominence of actor in article (number of occurrences/total # sentences)
-      rel_first = 1-(first/sentence_count), # Relative position of first occurrence at sentence level
-    ) %>%
-    select(`_id`:occ, prom,rel_first,first,ids)
-
   if (nrow(hits) == 0) {
     print("Nothing to update for this batch")
     return(NULL)
   } else {
+    hits <- hits %>%
+      group_by(`_id`) %>%
+      summarise(
+        sentence_id = list(as.integer(sentence_id)),
+        sentence_start = list(sentence_start),
+        sentence_end = list(sentence_end),
+        actor_start = I(list(unlist(actor_start))), # List of actor ud token start positions
+        actor_end = I(list(unlist(actor_end))), # List of actor ud token end positions
+        occ = length(unique(unlist(sentence_id))), # Number of sentences in which actor occurs
+        first = min(unlist(sentence_id)), # First sentence in which actor is mentioned
+        ids = I(list(ids)),
+        sentence_count = first(sentence_count)# List of actor ids
+      ) %>%
+      mutate(
+        prom = occ/sentence_count, # Relative prominence of actor in article (number of occurrences/total # sentences)
+        rel_first = 1-(first/sentence_count), # Relative position of first occurrence at sentence level
+      ) %>%
+      select(`_id`:occ, prom,rel_first,first,ids)
     bulk <- apply(hits, 1, bulk_writer, varname ='actorsDetail', type = 'add', ver = ver)
     bulk <- c(bulk,apply(hits[c(1,11)], 1, bulk_writer, varname='actors', type = 'add', ver = ver))
     return(elastic_update(bulk, es_super = es_super, localhost = localhost))
