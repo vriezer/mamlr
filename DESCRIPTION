@@ -17,7 +17,7 @@ Depends: R (>= 3.3.1),
     SparseM,
     future,
     future.apply,
-    data.table (>=1.9.8)
+    data.table
 License: Copyright Erik de Vries
 Encoding: UTF-8
 LazyData: true
