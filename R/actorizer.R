@@ -50,19 +50,12 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
     mutate(
       sentence_count = n()
     )
-
-  hits <- left_join(ud, markers, by='_id') %>%
-    mutate(
-      actor = case_when(
-        start <= marker_start  & end >= marker_start ~ T,
-        T ~ F
-      )
-    ) %>%
-    select(`_id`, sentence_id, start, end,actor,merged) %>%
-    filter(actor) %>%
+  hits <- as.data.table(ud)[as.data.table(markers), .(`_id`, lemma,x.start, start, end, x.end, sentence_id, merged), on =.(`_id` = `_id`, start <= marker_start, end >= marker_start)] %>%
+    mutate(end = x.end,
+           start = x.start) %>%
+    select(`_id`, sentence_id, start, end,merged) %>%
     group_by(`_id`,sentence_id) %>%
     summarise(
-      actor = any(actor),
       actor_start = I(list(start)),
       actor_end = I(list(end)),
       n_markers = length(start),
