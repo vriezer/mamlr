@@ -18,26 +18,30 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
     return(as.list(as.data.frame(x-((row(x)-1)*(nchar(pre_tags)+nchar(post_tags))))))
   }
 
-  out <- mamlr:::out_parser(out, field = 'highlight', clean = F)
+  out <- mamlr:::out_parser(out, field = 'highlight', clean = F) %>%
+    ## Computing offset for first token position (some articles have a minimum token start position of 16, instead of 1 or 2)
+    mutate( # Checking if the merged field starts with a whitespace character
+      space = case_when(
+        str_starts(merged, '\\s') ~ 1,
+        T ~ 0)
+    ) %>%
+    unnest(cols = '_source.ud') %>%
+    rowwise() %>%
+    mutate(ud_min = min(unlist(start))-1-space) ## Create offset variable, subtract 1 for default token start position of 1, and subtract 1 if merged field starts with a whitespace
 
+  print(str_c('Number of articles with minimum token start position higher than 2: ',sum(out$ud_min > 2)))
+  print('Unique ud_min offset values in batch: ')
+  print(unique(out$ud_min))
   prefix[prefix==''] <- NA
   postfix[postfix==''] <- NA
   pre_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", pre_tags)
   post_tags_regex <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", post_tags)
-  out$markers <- lapply(str_locate_all(out$merged,coll(pre_tags)), offsetter, pre_tags = pre_tags, post_tags = post_tags)
-  markers <- out %>%
-    select(`_id`,markers) %>%
-    unnest_wider(markers) %>%
-    rename(marker_start = start, marker_end = end) %>%
-    unnest(colnames(.))
 
   if (sum(nchar(out$merged) > 990000) > 0) {
     stop("One or more documents in this batch exceed 990000 characters")
   }
   # Extracting ud output from document
   ud <- out %>%
-    select(`_id`,`_source.ud`, merged) %>%
-    unnest(cols = c("_source.ud")) %>%
     select(`_id`,lemma,start,end, sentence_id,merged) %>%
     unnest(cols = colnames(.))
 
@@ -50,6 +54,18 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
     mutate(
       sentence_count = n()
     )
+
+  out$markers <- lapply(str_locate_all(out$merged,coll(pre_tags)),offsetter, pre_tags = pre_tags, post_tags = post_tags)
+  markers <- out %>%
+    select(`_id`,markers, ud_min) %>%
+    unnest_wider(markers) %>%
+    rename(marker_start = start, marker_end = end) %>%
+    unnest(colnames(.)) %>%
+    ## Modifying marker start and end positions using the ud_min column (see above)
+    mutate(marker_start = marker_start +(ud_min),
+             marker_end = marker_end + (ud_min))
+
+
   hits <- as.data.table(ud)[as.data.table(markers), .(`_id`, lemma,x.start, start, end, x.end, sentence_id, merged), on =.(`_id` = `_id`, start <= marker_start, end >= marker_start)] %>%
     mutate(end = x.end,
            start = x.start) %>%
@@ -88,6 +104,14 @@ actorizer <- function(out, localhost = F, ids, prefix, postfix, pre_tags, post_t
       filter(
         !str_detect(sentence, paste0(post_tags_regex,'(',postfix,')')) & !str_detect(sentence, paste0('(',prefix,')',pre_tags_regex))
       )
+  }
+
+  ### Checking and removing any na rows, and reporting them in the console
+  nas <- hits %>% filter(is.na(sentence_id))
+  hits <- hits %>% filter(!is.na(sentence_id))
+  if (nrow(nas) > 0) {
+    print(str_c('The following articles have not been searched correctly for actorId ',ids))
+    print(str_c('id_na: ',nas$`_id`, collapse = '\n '))
   }
   if (nrow(hits) == 0) {
     print("Nothing to update for this batch")
