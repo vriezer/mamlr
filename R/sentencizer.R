@@ -107,7 +107,6 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
           text.sent_sum = sum(sent_sum),
           text.words = sum(words),
           text.sent_words = sum(sent_words),
-          text.sent_lemmas = I(list(unlist(sent_lemmas))),
           text.sentences = n()
         ) %>%
         mutate(
