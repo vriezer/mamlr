@@ -55,11 +55,7 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
                   words = length(lemma),
                   sent_words = sum(prox != 0),
                   # sent_lemmas = list(lem_u[prox != 0])
-                  ) %>%
-        mutate(
-          sent = sent_sum/words,
-          arousal = sent_words/words
-        )
+                  )
       ## If there is no dictionary, create a ud_sent, with just sentence ids and word counts per sentence
     } else {
       ud_sent <- ud_sent %>%
