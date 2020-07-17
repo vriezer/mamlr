@@ -140,7 +140,9 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
         } else if (dump) {
           saveRDS(jsonlite:::flatten(json$hits$hits), file = paste0('batch_',batch*batch_size,'.Rds'))
         } else {
-          out <- bind_rows(out, jsonlite:::flatten(json$hits$hits))
+          # Old merging code
+          # out <- bind_rows(out, jsonlite:::flatten(json$hits$hits))
+          out <- rbindlist(list(out, jsonlite:::flatten(json$hits$hits)))
         }
       }
     }

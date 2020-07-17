@@ -49,6 +49,7 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
         sent_sum = 0,
       )
   }
+
   ## Create aggregations according to list of actorId vectors in ids
   if(!is.null(ids)) {
     output <- lapply(ids,grouper, df = df) %>%
@@ -64,6 +65,21 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
       )
     return(output)
   } else {
+    text_noactors <- df %>%
+      rowwise() %>%
+      filter(is.null(unlist(ids))) %>%
+      group_by(`_id`) %>%
+      summarise(noactor.sent = sum(sent_sum)/sum(words),
+                noactor.sent_sum = sum(sent_sum),
+                noactor.sent_words = sum(sent_words),
+                noactor.words = sum(words),
+                noactor.arousal = sum(sent_words)/sum(words),
+                noactor.first = first(sentence_id),
+                noactor.occ = n(),
+                publication_date = as.Date(first(`_source.publication_date`)),
+                doctype = first(`_source.doctype`)) %>%
+      select(`_id`,starts_with('noactor.'))
+
     all <- df %>%
       rowwise() %>%
       filter(!is.null(unlist(ids))) %>%
@@ -102,24 +118,27 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
       )
     ## Create actor metadata dataframe per active date (one row per day per actor)
     colnames(actors_meta) <- str_replace(colnames(actors_meta),'_source.','')
-    actors_meta_bydate <- actors_meta %>%
+    actors_meta <- actors_meta %>%
       mutate(
         startDate = as.Date(startDate),
-        endDate = as.Date(endDate)
-      ) %>%
-      select(
-        lastName,firstName,`function`,gender,yearOfBirth,parlPeriod,partyId,ministerName,ministryId,actorId,startDate,endDate
-      ) %>%
-      rowwise() %>%
-      mutate(
-        publication_date = list(seq(from=startDate, to=endDate,by="day")),
+        endDate = as.Date(endDate),
         ids = actorId
       ) %>%
-      unnest(cols=publication_date)
-
-    ## Join the actor metadata with the article data by actor id and date
-    actors <- actors %>%
-      left_join(.,actors_meta_bydate, by=c("ids","publication_date"))
+      select(-`_id`)
+    party_meta <- actors_meta %>%
+      filter(`function` == 'Party') %>%
+      mutate(
+        ids = partyId
+      )
+    actors <- as.data.table(actors_meta)[as.data.table(actors),
+                                         c('x.startDate','x.endDate',colnames(actors), 'lastName','firstName','function','gender','yearOfBirth','parlPeriod','partyId','ministerName','ministryId','actorId','startDate','endDate'),
+                                         on =.(ids = ids, startDate <= publication_date, endDate >= publication_date),
+                                         allow.cartesian = T,
+                                         mult = 'all',
+                                         with = F] %>%
+      mutate(startDate = x.startDate,
+             endDate = x.endDate) %>%
+      select(-starts_with('x.'))
 
     ## Generate party-actor aggregations (mfsa)
     parties_actors <- df %>%
@@ -137,6 +156,7 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
                 actor.occ = n(),
                 publication_date = first(`_source.publication_date`),
                 doctype = first(`_source.doctype`)) %>%
+      left_join(., party_meta, actors_meta, by=c('ids')) %>%
       mutate(
         ids = str_c(ids,"_mfsa")
       )
@@ -157,13 +177,15 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
                 actor.occ = n(),
                 publication_date = first(`_source.publication_date`),
                 doctype = first(`_source.doctype`)) %>%
+      left_join(., party_meta, actors_meta, by=c('ids')) %>%
       mutate(
         ids = str_c(ids,"_mfs")
       )
 
     ## Join all aggregations into a single data frame, compute derived actor-level measures, and add date dummies
     df <- bind_rows(actors, parties, parties_actors, all) %>%
-      left_join(text_sent, by="_id") %>%
+      left_join(.,text_sent, by="_id") %>%
+      left_join(.,text_noactors, by="_id") %>%
       mutate(
         actor.prom = actor.occ/text.sentences,
         actor.rel_first = 1-(actor.first/text.sentences),
@@ -172,7 +194,8 @@ actor_merger <- function(df, actors_meta, ids = NULL) {
         yearmonthday = strftime(publication_date, format = '%Y%m%d'),
         yearweek = strftime(publication_date, format = "%Y%V")
       ) %>%
-      ungroup()
+      ungroup() %>%
+      select(-contains('Search'),-starts_with('not'), -`_index`, -`_type`, -`_score`)
     return(df)
   }
 }
