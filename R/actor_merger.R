@@ -58,7 +58,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       (.SD),
       sent_words = 0,
       sent_sum = 0
-    ),.SDcols = -c('sent_words','sent_sum')]
+    )]
   }
 
   ## Unnest to sentence level
