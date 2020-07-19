@@ -160,7 +160,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       actor.first = first(sentence_id),
       actor.occ = .N
     ), by = c('id','ids')]
-    parties_actors <- actors_meta[parties_actors, on = c('ids')][!is.na(id),.(ids = str_c(ids,"_mfsa"), (.SD)), .SDcols = -c('ids')]
+    parties_actors <- actors_meta[parties_actors, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfsa"), (.SD)), .SDcols = -c('ids')]
 
     ## Generate party aggregations (mfs)
     parties <- df[str_ends(ids,'_f') | str_ends(ids,'_s'),.(
