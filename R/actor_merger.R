@@ -175,7 +175,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       actor.first = first(sentence_id),
       actor.occ = .N
     ), by = c('id','ids')]
-    parties <- actors_meta[parties, on = c('ids')][!is.na(id),.(ids = str_c(ids,"_mfs"), (.SD)), .SDcols = -c('ids')]
+    parties <- actors_meta[parties, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfs"), (.SD)), .SDcols = -c('ids')]
 
     ## Join all aggregations into a single data frame, compute derived actor-level measures, and add date dummies
     df <- bind_rows(actors, parties, parties_actors, all) %>%
