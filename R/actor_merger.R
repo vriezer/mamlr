@@ -52,11 +52,6 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
 
   text_sent <- df[,.SD, .SDcols = c('id', 'doctype',grep('text\\.',names(df), value = T))]
 
-  ## Unnest to sentence level
-  df <- df[,lapply(.SD, unlist, recursive=F),
-           .SDcols = c('sentence_id', 'sent_sum', 'words', 'sent_words','ids'),
-           by = list(id,publication_date)]
-
   ## Create bogus variables if sentiment is not scored
   if(!"sent_sum" %in% colnames(df)) {
     df <- df[,.(
@@ -65,6 +60,13 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       sent_sum = 0
     ),.SDcols = -c('sent_words','sent_sum')]
   }
+
+  ## Unnest to sentence level
+  df <- df[,lapply(.SD, unlist, recursive=F),
+           .SDcols = c('sentence_id', 'sent_sum', 'words', 'sent_words','ids'),
+           by = list(id,publication_date)]
+
+
 
   text_noactors <- df[lengths(ids) == 0L,
                       .(noactor.sent = sum(sent_sum)/sum(words),
