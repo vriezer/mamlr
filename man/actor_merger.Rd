@@ -4,14 +4,14 @@
 \alias{actor_merger}
 \title{Aggregate sentence-level dataset containing actors (from sentencizer())}
 \usage{
-actor_merger(df, actors_meta, ids = NULL)
+actor_merger(df, actors_meta, actor_groups = NULL)
 }
 \arguments{
 \item{df}{Data frame with actor ids, produced by sentencizer}
 
 \item{actors_meta}{Data frame containing actor metadata obtained using elasticizer(index="actors")}
 
-\item{ids}{Optional list of vectors, where each vector contains actor ids to be merged (e.g. merge all left-wing parties)}
+\item{actor_groups}{Optional list of vectors, where each vector contains actor ids to be merged (e.g. merge all left-wing parties)}
 }
 \value{
 When no ids, returns actor-article dataset with individual actors, party aggregations, party-actor aggregations and overall actor sentiment (regardless of specific actors). When ids, returns aggregations for each vector in list
