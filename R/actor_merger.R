@@ -90,6 +90,26 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
               actor.occ = .N,
               ids = 'all'), by = list(id)]
 
+  all_ind <- df[str_detect(ids, 'A_'),
+            .(actor.sent = sum(sent_sum)/sum(words),
+              actor.sent_sum = sum(sent_sum),
+              actor.sent_words = sum(sent_words),
+              actor.words = sum(words),
+              actor.arousal = sum(sent_words)/sum(words),
+              actor.first = first(sentence_id),
+              actor.occ = .N,
+              ids = 'ind'), by = list(id)]
+
+  all_par <- df[str_detect(ids, '_f|_s'),
+            .(actor.sent = sum(sent_sum)/sum(words),
+              actor.sent_sum = sum(sent_sum),
+              actor.sent_words = sum(sent_words),
+              actor.words = sum(words),
+              actor.arousal = sum(sent_words)/sum(words),
+              actor.first = first(sentence_id),
+              actor.occ = .N,
+              ids = 'par'), by = list(id)]
+
   ## Unnest to actor level
   df <- df[,.(ids = as.character(unlist(ids))),
                   by = list(id,publication_date,sentence_id, sent_sum, words, sent_words)]
@@ -178,7 +198,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
     parties <- actors_meta[parties, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfs"), (.SD)), .SDcols = -c('ids')]
 
     ## Join all aggregations into a single data frame, compute derived actor-level measures, and add date dummies
-    df <- bind_rows(actors, parties, parties_actors, all) %>%
+    df <- bind_rows(actors, parties, parties_actors, all, all_ind, all_par) %>%
       left_join(.,text_sent, by="id") %>%
       left_join(.,text_noactors, by="id") %>%
       mutate(
