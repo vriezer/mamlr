@@ -75,7 +75,8 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
                         noactor.words = sum(words),
                         noactor.arousal = sum(sent_words)/sum(words),
                         noactor.first = first(sentence_id),
-                        noactor.occ = .N), by = list(id)]
+                        noactor.occ = .N
+                        ), by = list(id)]
 
 
 
@@ -88,6 +89,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
               actor.arousal = sum(sent_words)/sum(words),
               actor.first = first(sentence_id),
               actor.occ = .N,
+              publication_date = first(publication_date),
               ids = 'all'), by = list(id)]
 
   all_ind <- df[str_detect(ids, 'A_'),
@@ -98,6 +100,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
               actor.arousal = sum(sent_words)/sum(words),
               actor.first = first(sentence_id),
               actor.occ = .N,
+              publication_date = first(publication_date),
               ids = 'ind'), by = list(id)]
 
   all_par <- df[str_detect(ids, '_f|_s'),
@@ -108,6 +111,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
               actor.arousal = sum(sent_words)/sum(words),
               actor.first = first(sentence_id),
               actor.occ = .N,
+              publication_date = first(publication_date),
               ids = 'par'), by = list(id)]
 
   ## Unnest to actor level
@@ -178,7 +182,8 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       actor.words = sum(words),
       actor.arousal = sum(sent_words)/sum(words),
       actor.first = first(sentence_id),
-      actor.occ = .N
+      actor.occ = .N,
+      publication_date = first(publication_date)
     ), by = c('id','ids')]
     parties_actors <- actors_meta[parties_actors, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfsa"), (.SD)), .SDcols = -c('ids')]
 
@@ -193,7 +198,8 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       actor.words = sum(words),
       actor.arousal = sum(sent_words)/sum(words),
       actor.first = first(sentence_id),
-      actor.occ = .N
+      actor.occ = .N,
+      publication_date = first(publication_date)
     ), by = c('id','ids')]
     parties <- actors_meta[parties, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfs"), (.SD)), .SDcols = -c('ids')]
 
