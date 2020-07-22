@@ -4,6 +4,8 @@
 #' @param df Data frame with actor ids, produced by sentencizer
 #' @param actors_meta Data frame containing actor metadata obtained using elasticizer(index="actors")
 #' @param actor_groups Optional list of vectors, where each vector contains actor ids to be merged (e.g. merge all left-wing parties)
+#' @param pos_cutoff Optional value above which sentence-level sentiment scores should be considered "positive"
+#' @param neg_cutoff Optional value below which sentence-level sentiment scores should be considered "negative"
 #' @return When no ids, returns actor-article dataset with individual actors, party aggregations, party-actor aggregations and overall actor sentiment (regardless of specific actors). When ids, returns aggregations for each vector in list
 #' @export
 #' @examples
@@ -16,7 +18,7 @@
 ### some individual actors, where the partyId of an individual actor doesn't match an actual
 ### partyId in the actor dataset
 
-actor_merger <- function(df, actors_meta, actor_groups = NULL) {
+actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff = NULL, neg_cutoff = NULL) {
   grouper <- function(id2, df) {
     if ('P_1206_a' %in% id2) {
       id2 <- c('P_212_a','P_1771_a',id2)
@@ -30,6 +32,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
     return(df[ids %in% id2,] %>%
              .[!duplicated(.,by = c('id','sentence_id')),.(
                actor.sent = sum(sent_sum)/sum(words),
+               actor.sent_binary = sum(sent_binary_weighted)/sum(words),
                actor.sent_sum = sum(sent_sum),
                actor.sent_words = sum(sent_words),
                actor.words = sum(words),
@@ -50,8 +53,6 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
     id = as.factor(`_id`)
   ), .SDcols = !c('_source.doctype','_source.publication_date','_id')]
 
-  text_sent <- df[,.SD, .SDcols = c('id', 'doctype',grep('text\\.',names(df), value = T))]
-
   ## Create bogus variables if sentiment is not scored
   if(!"sent_sum" %in% colnames(df)) {
     df <- df[,.(
@@ -64,61 +65,50 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
   ## Unnest to sentence level
   df <- df[,lapply(.SD, unlist, recursive=F),
            .SDcols = c('sentence_id', 'sent_sum', 'words', 'sent_words','ids'),
-           by = list(id,publication_date)]
+           by = list(id,publication_date,doctype)]
+  df <- df[,.(
+    (.SD),
+    sent = sent_sum/words
+  )][,.(
+    (.SD),
+    sent_binary = case_when(
+      sent > pos_cutoff ~ 1,
+      sent == 0 ~ 0,
+      sent >= neg_cutoff & sent <= pos_cutoff ~ 0,
+      TRUE ~ -1
+    )
+  )][,.(
+    (.SD),
+    sent_binary_weighted = sent_binary*words
+  )]
 
+  text_sent <- df[,
+                      .(text.sent = sum(sent_sum)/sum(words),
+                        text.sent_binary = sum(sent_binary_weighted)/sum(words),
+                        text.sent_sum = sum(sent_sum),
+                        text.sent_words = sum(sent_words),
+                        text.words = sum(words),
+                        text.arousal = sum(sent_words)/sum(words),
+                        text.sentences = .N,
+                        doctype = first(doctype),
+                        publication_date = first(publication_date)
+                      ), by = list(id)]
+#
+#   test2 <- text_sent %>% mutate(
+#     sent_bin = case_when(
+#       text.sent > pos_cutoff ~ 1,
+#       text.sent == 0 ~ 0,
+#       text.sent >= neg_cutoff & text.sent <= pos_cutoff ~ 0,
+#       TRUE ~ -1
+#     ),
+#     sent_bin_weighted = case_when(
+#       text.sent_binary > 0 ~ 1,
+#       text.sent_binary < 0 ~ -1,
+#       TRUE ~ 0
+#     )
+#   )
 
-
-  text_noactors <- df[lengths(ids) == 0L,
-                      .(noactor.sent = sum(sent_sum)/sum(words),
-                        noactor.sent_sum = sum(sent_sum),
-                        noactor.sent_words = sum(sent_words),
-                        noactor.words = sum(words),
-                        noactor.arousal = sum(sent_words)/sum(words),
-                        noactor.first = first(sentence_id),
-                        noactor.occ = .N
-                        ), by = list(id)]
-
-
-
-
-  all <- df[lengths(ids) > 0L,
-            .(actor.sent = sum(sent_sum)/sum(words),
-              actor.sent_sum = sum(sent_sum),
-              actor.sent_words = sum(sent_words),
-              actor.words = sum(words),
-              actor.arousal = sum(sent_words)/sum(words),
-              actor.first = first(sentence_id),
-              actor.occ = .N,
-              publication_date = first(publication_date),
-              ids = 'all'), by = list(id)]
-
-  all_ind <- df[str_detect(ids, 'A_'),
-            .(actor.sent = sum(sent_sum)/sum(words),
-              actor.sent_sum = sum(sent_sum),
-              actor.sent_words = sum(sent_words),
-              actor.words = sum(words),
-              actor.arousal = sum(sent_words)/sum(words),
-              actor.first = first(sentence_id),
-              actor.occ = .N,
-              publication_date = first(publication_date),
-              ids = 'ind'), by = list(id)]
-
-  all_par <- df[str_detect(ids, '_f|_s'),
-            .(actor.sent = sum(sent_sum)/sum(words),
-              actor.sent_sum = sum(sent_sum),
-              actor.sent_words = sum(sent_words),
-              actor.words = sum(words),
-              actor.arousal = sum(sent_words)/sum(words),
-              actor.first = first(sentence_id),
-              actor.occ = .N,
-              publication_date = first(publication_date),
-              ids = 'par'), by = list(id)]
-
-  ## Unnest to actor level
-  df <- df[,.(ids = as.character(unlist(ids))),
-                  by = list(id,publication_date,sentence_id, sent_sum, words, sent_words)]
-
-  ## Create aggregations according to list of actorId vectors in ids
+    ## Create aggregations according to list of actorId vectors in ids
   if(!is.null(actor_groups)) {
     output <- lapply(actor_groups,grouper, df = df) %>%
       rbindlist(.) %>%
@@ -132,10 +122,63 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
         yearweek = strftime(publication_date, format = "%Y%V")
       )
     return(output)
-  } else {
+  } else if(!is.null(actors_meta)) {
+    text_noactors <- df[lengths(ids) == 0L,
+                        .(noactor.sent = sum(sent_sum)/sum(words),
+                          noactor.sent_binary = sum(sent_binary_weighted)/sum(words),
+                          noactor.sent_sum = sum(sent_sum),
+                          noactor.sent_words = sum(sent_words),
+                          noactor.words = sum(words),
+                          noactor.arousal = sum(sent_words)/sum(words),
+                          noactor.first = first(sentence_id),
+                          noactor.occ = .N
+                        ), by = list(id)]
+
+    all <- df[lengths(ids) > 0L,
+              .(actor.sent = sum(sent_sum)/sum(words),
+                actor.sent_binary = sum(sent_binary_weighted)/sum(words),
+                actor.sent_sum = sum(sent_sum),
+                actor.sent_words = sum(sent_words),
+                actor.words = sum(words),
+                actor.arousal = sum(sent_words)/sum(words),
+                actor.first = first(sentence_id),
+                actor.occ = .N,
+                publication_date = first(publication_date),
+                ids = 'all'), by = list(id)]
+
+    all_ind <- df[str_detect(ids, 'A_'),
+                  .(actor.sent = sum(sent_sum)/sum(words),
+                    actor.sent_binary = sum(sent_binary_weighted)/sum(words),
+                    actor.sent_sum = sum(sent_sum),
+                    actor.sent_words = sum(sent_words),
+                    actor.words = sum(words),
+                    actor.arousal = sum(sent_words)/sum(words),
+                    actor.first = first(sentence_id),
+                    actor.occ = .N,
+                    publication_date = first(publication_date),
+                    ids = 'ind'), by = list(id)]
+
+    all_par <- df[str_detect(ids, '_f|_s'),
+                  .(actor.sent = sum(sent_sum)/sum(words),
+                    actor.sent_binary = sum(sent_binary_weighted)/sum(words),
+                    actor.sent_sum = sum(sent_sum),
+                    actor.sent_words = sum(sent_words),
+                    actor.words = sum(words),
+                    actor.arousal = sum(sent_words)/sum(words),
+                    actor.first = first(sentence_id),
+                    actor.occ = .N,
+                    publication_date = first(publication_date),
+                    ids = 'par'), by = list(id)]
+
+    ## Unnest to actor level
+    df <- df[,.(ids = as.character(unlist(ids))),
+             by = list(id,publication_date,sentence_id, sent_sum, words, sent_words,sent_binary_weighted)]
+
+
     ## Create aggregate measures for individual actors
     actors <- df[str_starts(ids, 'A_'),
                  .(actor.sent = sum(sent_sum)/sum(words),
+                   actor.sent_binary = sum(sent_binary_weighted)/sum(words),
                    actor.sent_sum = sum(sent_sum),
                    actor.sent_words = sum(sent_words),
                    actor.words = sum(words),
@@ -177,6 +220,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       (.SD)
     ), .SDcols = -c('ids')][,.(
       actor.sent = sum(sent_sum)/sum(words),
+      actor.sent_binary = sum(sent_binary_weighted)/sum(words),
       actor.sent_sum = sum(sent_sum),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
@@ -193,6 +237,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       (.SD)
     ),.SDcols = -c('ids')][,.(
       actor.sent = sum(sent_sum)/sum(words),
+      actor.sent_binary = sum(sent_binary_weighted)/sum(words),
       actor.sent_sum = sum(sent_sum),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
@@ -205,7 +250,7 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
 
     ## Join all aggregations into a single data frame, compute derived actor-level measures, and add date dummies
     df <- bind_rows(actors, parties, parties_actors, all, all_ind, all_par) %>%
-      left_join(.,text_sent, by="id") %>%
+      left_join(.,text_sent, by=c("id","publication_date")) %>%
       left_join(.,text_noactors, by="id") %>%
       mutate(
         actor.prom = actor.occ/text.sentences,
@@ -218,6 +263,15 @@ actor_merger <- function(df, actors_meta, actor_groups = NULL) {
       ungroup() %>%
       select(-contains('Search'),-starts_with('not'))
     return(df)
+  } else {
+    df <- text_sent %>%
+      mutate(
+        year = strftime(publication_date, format = '%Y'),
+        yearmonth = strftime(publication_date, format = '%Y%m'),
+        yearmonthday = strftime(publication_date, format = '%Y%m%d'),
+        yearweek = strftime(publication_date, format = "%Y%V")
+      ) %>%
+      ungroup()
   }
 }
 
