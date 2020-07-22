@@ -104,13 +104,11 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
     if(!is.null(sent_dict)) {
       text_sent <- out %>%
         summarise(
-          text.sent_sum = sum(sent_sum),
           text.words = sum(words),
           text.sent_words = sum(sent_words),
           text.sentences = n()
         ) %>%
         mutate(
-          text.sent = text.sent_sum/text.words,
           text.arousal = text.sent_words/text.words
         )
 
