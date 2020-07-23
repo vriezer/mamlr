@@ -16,7 +16,7 @@ out_parser <- function(out, field, clean = F) {
   fncols <- function(data, cname) {
     add <-cname[!cname%in%names(data)]
 
-    if(length(add)!=0) data[add] <- NA
+    if(length(add)!=0) data[, (add) := (NA)]
     data
   }
 
