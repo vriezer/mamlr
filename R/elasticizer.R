@@ -142,7 +142,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
         } else {
           # Old merging code
           # out <- bind_rows(out, jsonlite:::flatten(json$hits$hits))
-          out <- rbindlist(list(out, jsonlite:::flatten(json$hits$hits)))
+          out <- rbindlist(list(out, jsonlite:::flatten(json$hits$hits)),use.names = T, fill = T)
         }
       }
     }
