@@ -31,12 +31,10 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
     }
     return(df[ids %in% id2,] %>%
              .[!duplicated(.,by = c('id','sentence_id')),.(
-               actor.sent = sum(sent_sum)/sum(words),
-               actor.sent_binary = sum(sent_binary_weighted)/sum(words),
-               actor.sent_sum = sum(sent_sum),
+               actor.sent = sum(sent_binary_weighted)/sum(words),
                actor.sent_words = sum(sent_words),
                actor.words = sum(words),
-               actor.arousal = sum(sent_words)/sum(words),
+               actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
                actor.first = first(sentence_id),
                actor.occ = .N,
                publication_date = first(publication_date),
@@ -83,30 +81,14 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
   )]
 
   text_sent <- df[,
-                      .(text.sent = sum(sent_sum)/sum(words),
-                        text.sent_binary = sum(sent_binary_weighted)/sum(words),
-                        text.sent_sum = sum(sent_sum),
+                      .(text.sent = sum(sent_binary_weighted)/sum(words),
                         text.sent_words = sum(sent_words),
                         text.words = sum(words),
-                        text.arousal = sum(sent_words)/sum(words),
+                        text.arousal = sum(abs(sent_binary_weighted))/sum(words),
                         text.sentences = .N,
                         doctype = first(doctype),
                         publication_date = first(publication_date)
                       ), by = list(id)]
-#
-#   test2 <- text_sent %>% mutate(
-#     sent_bin = case_when(
-#       text.sent > pos_cutoff ~ 1,
-#       text.sent == 0 ~ 0,
-#       text.sent >= neg_cutoff & text.sent <= pos_cutoff ~ 0,
-#       TRUE ~ -1
-#     ),
-#     sent_bin_weighted = case_when(
-#       text.sent_binary > 0 ~ 1,
-#       text.sent_binary < 0 ~ -1,
-#       TRUE ~ 0
-#     )
-#   )
 
     ## Create aggregations according to list of actorId vectors in ids
   if(!is.null(actor_groups)) {
@@ -124,47 +106,39 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
     return(output)
   } else if(!is.null(actors_meta)) {
     text_noactors <- df[lengths(ids) == 0L,
-                        .(noactor.sent = sum(sent_sum)/sum(words),
-                          noactor.sent_binary = sum(sent_binary_weighted)/sum(words),
-                          noactor.sent_sum = sum(sent_sum),
+                        .(noactor.sent = sum(sent_binary_weighted)/sum(words),
                           noactor.sent_words = sum(sent_words),
                           noactor.words = sum(words),
-                          noactor.arousal = sum(sent_words)/sum(words),
+                          noactor.arousal = sum(abs(sent_binary_weighted))/sum(words),
                           noactor.first = first(sentence_id),
                           noactor.occ = .N
                         ), by = list(id)]
 
     all <- df[lengths(ids) > 0L,
-              .(actor.sent = sum(sent_sum)/sum(words),
-                actor.sent_binary = sum(sent_binary_weighted)/sum(words),
-                actor.sent_sum = sum(sent_sum),
+              .(actor.sent = sum(sent_binary_weighted)/sum(words),
                 actor.sent_words = sum(sent_words),
                 actor.words = sum(words),
-                actor.arousal = sum(sent_words)/sum(words),
+                actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
                 actor.first = first(sentence_id),
                 actor.occ = .N,
                 publication_date = first(publication_date),
                 ids = 'all'), by = list(id)]
 
     all_ind <- df[str_detect(ids, 'A_'),
-                  .(actor.sent = sum(sent_sum)/sum(words),
-                    actor.sent_binary = sum(sent_binary_weighted)/sum(words),
-                    actor.sent_sum = sum(sent_sum),
+                  .(actor.sent = sum(sent_binary_weighted)/sum(words),
                     actor.sent_words = sum(sent_words),
                     actor.words = sum(words),
-                    actor.arousal = sum(sent_words)/sum(words),
+                    actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
                     actor.first = first(sentence_id),
                     actor.occ = .N,
                     publication_date = first(publication_date),
                     ids = 'ind'), by = list(id)]
 
     all_par <- df[str_detect(ids, '_f|_s'),
-                  .(actor.sent = sum(sent_sum)/sum(words),
-                    actor.sent_binary = sum(sent_binary_weighted)/sum(words),
-                    actor.sent_sum = sum(sent_sum),
+                  .(actor.sent = sum(sent_binary_weighted)/sum(words),
                     actor.sent_words = sum(sent_words),
                     actor.words = sum(words),
-                    actor.arousal = sum(sent_words)/sum(words),
+                    actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
                     actor.first = first(sentence_id),
                     actor.occ = .N,
                     publication_date = first(publication_date),
@@ -177,12 +151,10 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
 
     ## Create aggregate measures for individual actors
     actors <- df[str_starts(ids, 'A_'),
-                 .(actor.sent = sum(sent_sum)/sum(words),
-                   actor.sent_binary = sum(sent_binary_weighted)/sum(words),
-                   actor.sent_sum = sum(sent_sum),
+                 .(actor.sent = sum(sent_binary_weighted)/sum(words),
                    actor.sent_words = sum(sent_words),
                    actor.words = sum(words),
-                   actor.arousal = sum(sent_words)/sum(words),
+                   actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
                    actor.first = first(sentence_id),
                    actor.occ = .N,
                    publication_date = first(publication_date)), by = list(id, ids)]
@@ -219,12 +191,10 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
                       TRUE ~ ids),
       (.SD)
     ), .SDcols = -c('ids')][,.(
-      actor.sent = sum(sent_sum)/sum(words),
-      actor.sent_binary = sum(sent_binary_weighted)/sum(words),
-      actor.sent_sum = sum(sent_sum),
+      actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
-      actor.arousal = sum(sent_words)/sum(words),
+      actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
       actor.first = first(sentence_id),
       actor.occ = .N,
       publication_date = first(publication_date)
@@ -236,12 +206,10 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
       ids = str_sub(ids, start = 1, end = -3),
       (.SD)
     ),.SDcols = -c('ids')][,.(
-      actor.sent = sum(sent_sum)/sum(words),
-      actor.sent_binary = sum(sent_binary_weighted)/sum(words),
-      actor.sent_sum = sum(sent_sum),
+      actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
-      actor.arousal = sum(sent_words)/sum(words),
+      actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
       actor.first = first(sentence_id),
       actor.occ = .N,
       publication_date = first(publication_date)
