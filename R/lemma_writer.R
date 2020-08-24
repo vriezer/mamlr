@@ -17,7 +17,7 @@
 #################################### Lemma text file generator #############################
 #################################################################################################
 
-lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cores = 1, meta_file = NULL) {
+lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cores = 1) {
   plan(multiprocess, workers = cores)
   par_writer <- function(row, out, lemma) {
     if (lemma == T) {
