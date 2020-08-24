@@ -20,7 +20,7 @@ out_parser <- function(out, field, clean = F) {
     data
   }
 
-  out <- fncols(out, c("highlight.text","highlight.title","highlight.teaser", "highlight.subtitle", "highlight.preteaser", '_source.text', '_source.title','_source.teaser','_source.subtitle','_source.preteaser'))
+  out <- fncols(data.table(out), c("highlight.text","highlight.title","highlight.teaser", "highlight.subtitle", "highlight.preteaser", '_source.text', '_source.title','_source.teaser','_source.subtitle','_source.preteaser'))
   par_parser <- function(row, out, field, clean) {
     doc <- out[row,]
     if (field == 'highlight') {

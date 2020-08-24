@@ -17,7 +17,7 @@
 #################################### Lemma text file generator #############################
 #################################################################################################
 
-lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cores = 1) {
+lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cores = 1, meta_file = NULL) {
   plan(multiprocess, workers = cores)
   par_writer <- function(row, out, lemma) {
     if (lemma == T) {
@@ -26,13 +26,22 @@ lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cor
       cat(iconv(out[row,]$merged, to = "UTF-8"), file = paste0(file,out[row,]$`_id`,'.txt'), append = F)
     }
   }
+
   if (documents == F) {
     out <- unnest(out,`_source.ud`)
     lemma <- str_c(unlist(out$lemma)[-which(unlist(out$upos) == 'PUNCT')], unlist(out$upos)[-which(unlist(out$upos) == 'PUNCT')], sep = '_')
     cat(lemma, file = file, append = T)
   }
   if (documents == T) {
-    out <- out_parser(out, field = '_source', clean = F, cores = cores)
+    if (lemma == F) {
+      out <- out_parser(out, field = '_source', clean = F)
+    } else {
+      if (!is.null(meta_file)) {
+        meta <- select(out, -`_source.ud`)
+        write.table(meta, str_c(file,meta_file), sep = ",", col.names = !file.exists(str_c(file,meta_file)), append = T)
+      }
+    }
     future_lapply(1:nrow(out), par_writer, out = out, lemma = lemma)
   }
+
 }
