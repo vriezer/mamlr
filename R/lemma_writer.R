@@ -35,11 +35,6 @@ lemma_writer <- function(out, file, localhost = F, documents = F, lemma = F, cor
   if (documents == T) {
     if (lemma == F) {
       out <- out_parser(out, field = '_source', clean = F)
-    } else {
-      if (!is.null(meta_file)) {
-        meta <- select(out, -`_source.ud`)
-        write.table(meta, str_c(file,meta_file), sep = ",", col.names = !file.exists(str_c(file,meta_file)), append = T)
-      }
     }
     future_lapply(1:nrow(out), par_writer, out = out, lemma = lemma)
   }
