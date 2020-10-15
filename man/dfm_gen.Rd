@@ -4,7 +4,15 @@
 \alias{dfm_gen}
 \title{Generates dfm from ElasticSearch output}
 \usage{
-dfm_gen(out, words = "999", text = "lemmas", clean, tolower = T)
+dfm_gen(
+  out,
+  words = "999",
+  text = "lemmas",
+  clean,
+  tolower = T,
+  binary = F,
+  ngrams = 1
+)
 }
 \arguments{
 \item{out}{The elasticizer-generated data frame}
@@ -16,6 +24,10 @@ dfm_gen(out, words = "999", text = "lemmas", clean, tolower = T)
 \item{clean}{Boolean indicating whether the results should be cleaned by removing words matching regex (see code).}
 
 \item{tolower}{Boolean indicating whether dfm features should be lowercased}
+
+\item{binary}{Boolean indicating whether or not to generate a binary dfm (only indicating term presence, not count). Defaults to FALSE}
+
+\item{ngrams}{Numeric, if higher than 1, generates ngrams of the given size. Defaults to 1}
 }
 \value{
 A Quanteda dfm

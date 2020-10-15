@@ -18,7 +18,7 @@
 #################################################################################################
 #################################### Update any kind of classification ##########################
 #################################################################################################
-class_update <- function(out, localhost = T, model_final, varname, text, words, clean, ver, es_super = .rs.askForPassword('ElasticSearch WRITE'), cores = 1) {
+class_update <- function(out, localhost = T, model_final, varname, text, words, clean, ver, es_super = .rs.askForPassword('ElasticSearch WRITE')) {
   print('updating')
   dfm <- dfm_gen(out, text = text, words = words, clean = clean)
   if (!is.null(model_final$idf)) {

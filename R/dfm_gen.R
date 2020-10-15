@@ -6,6 +6,8 @@
 #' @param text String indicating whether the "merged" field will contain the "full" text, old-style "lemmas" (will be deprecated), new-style "ud", or ud_upos combining lemmas with upos tags
 #' @param clean Boolean indicating whether the results should be cleaned by removing words matching regex (see code).
 #' @param tolower Boolean indicating whether dfm features should be lowercased
+#' @param binary Boolean indicating whether or not to generate a binary dfm (only indicating term presence, not count). Defaults to FALSE
+#' @param ngrams Numeric, if higher than 1, generates ngrams of the given size. Defaults to 1
 #' @return A Quanteda dfm
 #' @export
 #' @examples
@@ -18,7 +20,7 @@
 
 # filter(`_source.codes.timeSpent` != -1) %>% ### Exclude Norwegian summer sample hack
 
-dfm_gen <- function(out, words = '999', text = "lemmas", clean, tolower = T) {
+dfm_gen <- function(out, words = '999', text = "lemmas", clean, tolower = T, binary=F, ngrams=1) {
   # Create subset with just ids, codes and text
   out <- out %>%
     select(`_id`, matches("_source.*")) ### Keep only the id and anything belonging to the source field
@@ -40,15 +42,17 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, tolower = T) {
           .$codes == 3101 ~ 1,
           .$codes == 34 ~ 1,
           TRUE ~ 0
-        )
+        ),
+        aggregate = .$codes %>%
+          str_pad(4, side="right", pad="a") %>%
+          str_match("([0-9]{1,2})?[0|a][1-9|a]") %>%
+          .[,2] %>%
+          as.numeric(),
+        nondomestic = as.numeric(`_source.codes.nonDomestic`)
       ) %>%
-      mutate(aggregate = .$codes %>%
-               str_pad(4, side="right", pad="a") %>%
-               str_match("([0-9]{1,2})?[0|a][1-9|a]") %>%
-               .[,2] %>%
-               as.numeric()
+      mutate(
       )
-   vardoc <- out[,-seq(1,(length(names(out))-3),1)]
+   vardoc <- select(out, codes, junk, aggregate, nondomestic)
   } else {
     vardoc <- NULL
   }
@@ -62,6 +66,11 @@ dfm_gen <- function(out, words = '999', text = "lemmas", clean, tolower = T) {
     }
   }
   dfm <- corpus(out$merged, docnames = out$`_id`, docvars = vardoc) %>%
-    dfm(tolower = tolower, stem = F, remove_punct = T, valuetype = "regex")
+    tokens(remove_punct = T) %>%
+    tokens_ngrams(n = ngrams, skip = 0, concatenator = '_') %>%
+    dfm(tolower = tolower, stem = F, valuetype = "regex")
+  if (binary) {
+    dfm <- dfm_weight(dfm, scheme = 'boolean')
+  }
   return(dfm)
 }

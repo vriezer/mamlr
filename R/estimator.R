@@ -38,7 +38,7 @@ estimator <- function (row, grid, outer_folds, inner_folds, dfm, class_type, mod
     dfm_test <- dfm[inner_folds[[params$inner_fold]],]
     # If both inner and outer folds are NULL, set training set to whole dataset, estimate model and return final model
   } else {
-    final <- T ### Indicate final modeling run on whole dataset
+    dfm_test <- NULL
     dfm_train <- dfm
   }
 
@@ -82,7 +82,7 @@ estimator <- function (row, grid, outer_folds, inner_folds, dfm, class_type, mod
   ### Add more if statements for different models
 
   # If training on whole dataset, return final model, and idf values from dataset
-  if (exists("final")) {
+  if (is.null(dfm_test)) {
     return(list(text_model=text_model, idf=idf))
   } else { # Create a test set, and classify test items
     # Use force=T to keep only features present in both training and test set

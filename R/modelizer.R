@@ -60,6 +60,8 @@ modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, g
     slice(which.max((!!as.name(opt_measure)))) %>%
     # Select only the columns outer_fold, and the columns that are in the original parameter grid
     select(outer_fold, colnames(grid))
+  ## Create multithread work pool for future_lapply
+  plan(strategy = multiprocess, workers = cores)
 
   # Use the estimator function to build optimum models for each outer_fold
   outer_cv_output <- future_lapply(1:nrow(outer_grid), estimator,
@@ -77,6 +79,9 @@ modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, g
   final_folds <- cv_generator(NULL,inner_k = inner_k, vec = docvars(dfm, class_type), grid = grid, seed = seed)
   final_grid <- final_folds$grid
   final_inner <- final_folds$inner_folds
+
+  ## Create multithread work pool for future_lapply
+  plan(strategy = multiprocess, workers = cores)
 
   # Use the estimator function to estimate the performance of each row in final_grid
   final_cv_output <- future_lapply(1:nrow(final_grid), estimator,
@@ -111,8 +116,7 @@ modelizer <- function(dfm, outer_k, inner_k, class_type, opt_measure, country, g
                            class_type = class_type,
                            model = model)
   # Create list with output variables
-  output <- list(final_cv_output = final_cv_output,
-                 final_params = final_params,
+  output <- list(final_params = final_params,
                  outer_cv_output = outer_cv_output,
                  model_final = model_final,
                  grid = grid,

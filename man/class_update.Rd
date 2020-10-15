@@ -13,8 +13,7 @@ class_update(
   words,
   clean,
   ver,
-  es_super = .rs.askForPassword("ElasticSearch WRITE"),
-  cores = 1
+  es_super = .rs.askForPassword("ElasticSearch WRITE")
 )
 }
 \arguments{
