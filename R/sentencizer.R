@@ -52,8 +52,6 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
           )
         ) %>%
         summarise(sent_sum = sum(prox),
-                  sent_sum_pos = sum(prox[prox>0]),
-                  sent_sum_neg = sum(prox[prox<0]),
                   words = length(lemma),
                   sent_words = sum(prox != 0),
                   # sent_lemmas = list(lem_u[prox != 0])
