@@ -102,7 +102,9 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
         yearmonth = strftime(publication_date, format = '%Y%m'),
         yearmonthday = strftime(publication_date, format = '%Y%m%d'),
         yearweek = strftime(publication_date, format = "%Y%V")
-      )
+      ) %>%
+      mutate(across(where(is.character), as.factor)) %>%
+      mutate(across(where(is.Date), as.factor))
     return(output)
   } else if(!is.null(actors_meta)) {
     text_noactors <- df[lengths(ids) == 0L,
@@ -229,7 +231,9 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
         yearweek = strftime(publication_date, format = "%Y%V")
       ) %>%
       ungroup() %>%
-      select(-contains('Search'),-starts_with('not'))
+      select(-contains('Search'),-starts_with('not')) %>%
+      mutate(across(where(is.character), as.factor)) %>%
+      mutate(across(where(is.Date), as.factor))
     return(df)
   } else {
     df <- text_sent %>%
@@ -239,7 +243,10 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
         yearmonthday = strftime(publication_date, format = '%Y%m%d'),
         yearweek = strftime(publication_date, format = "%Y%V")
       ) %>%
-      ungroup()
+      ungroup() %>%
+      mutate(across(where(is.character), as.factor)) %>%
+      mutate(across(where(is.Date), as.factor))
+    return(df)
   }
 }
 

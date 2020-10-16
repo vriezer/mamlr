@@ -17,7 +17,9 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
     out <- out[row,]
     ## Create df with article metadata (fields that are included in the elasticizer function)
     metadata <- out %>%
-      select(`_id`,contains("_source"),-contains("computerCodes.actors"),-contains("ud"))
+      select(`_id`,`_source.publication_date`,`_source.doctype`) %>%
+      mutate(`_source.publication_date` = as.factor(`_source.publication_date`),
+             `_source.doctype` = as.factor(`_source.doctype`))
 
     ## Unnest documents into individual words
     ud_sent <- out %>% select(`_id`,`_source.ud`) %>%
@@ -100,28 +102,8 @@ sentencizer <- function(out, sent_dict = NULL, localhost = NULL, validation = F)
         left_join(ud_sent,.,by = c('_id','sentence_id')) %>%
         group_by(`_id`)
 
-    ## If there is a sent_dict, generate sentiment scores on article level
-    if(!is.null(sent_dict)) {
-      text_sent <- out %>%
-        summarise(
-          text.words = sum(words),
-          text.sent_words = sum(sent_words),
-          text.sentences = n()
-        ) #%>%
-        # mutate(
-        #   text.arousal = text.sent_words/text.words
-        # )
-
-    } else {
-      text_sent <- out %>%
-        summarise(
-          text.words = sum(words),
-          text.sentences = n()
-        )
-    }
       out <- out %>%
         summarise_all(list) %>%
-        left_join(.,text_sent,by='_id') %>%
         left_join(.,metadata,by='_id') %>%
         ungroup()
     return(out)
