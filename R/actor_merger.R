@@ -84,7 +84,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
                       .(text.sent = sum(sent_binary_weighted)/sum(words),
                         text.sent_words = sum(sent_words),
                         text.words = sum(words),
-                        # text.arousal = sum(abs(sent_binary_weighted))/sum(words),
+                        text.arousal = sum(sent_words)/sum(words),
                         text.sentences = .N,
                         doctype = first(doctype),
                         publication_date = first(publication_date)
@@ -111,7 +111,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
                         .(noactor.sent = sum(sent_binary_weighted)/sum(words),
                           noactor.sent_words = sum(sent_words),
                           noactor.words = sum(words),
-                          # noactor.arousal = sum(abs(sent_binary_weighted))/sum(words),
+                          noactor.arousal = sum(sent_words)/sum(words),
                           noactor.first = first(sentence_id),
                           noactor.occ = .N
                         ), by = list(id)]
@@ -120,7 +120,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
               .(actor.sent = sum(sent_binary_weighted)/sum(words),
                 actor.sent_words = sum(sent_words),
                 actor.words = sum(words),
-                # actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
+                actor.arousal = sum(sent_words)/sum(words),
                 actor.first = first(sentence_id),
                 actor.occ = .N,
                 publication_date = first(publication_date),
@@ -130,7 +130,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
                   .(actor.sent = sum(sent_binary_weighted)/sum(words),
                     actor.sent_words = sum(sent_words),
                     actor.words = sum(words),
-                    # actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
+                    actor.arousal = sum(sent_words)/sum(words),
                     actor.first = first(sentence_id),
                     actor.occ = .N,
                     publication_date = first(publication_date),
@@ -140,7 +140,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
                   .(actor.sent = sum(sent_binary_weighted)/sum(words),
                     actor.sent_words = sum(sent_words),
                     actor.words = sum(words),
-                    # actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
+                    actor.arousal = sum(sent_words)/sum(words),
                     actor.first = first(sentence_id),
                     actor.occ = .N,
                     publication_date = first(publication_date),
@@ -156,7 +156,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
                  .(actor.sent = sum(sent_binary_weighted)/sum(words),
                    actor.sent_words = sum(sent_words),
                    actor.words = sum(words),
-                   # actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
+                   actor.arousal = sum(sent_words)/sum(words),
                    actor.first = first(sentence_id),
                    actor.occ = .N,
                    publication_date = first(publication_date)), by = list(id, ids)]
@@ -196,7 +196,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
       actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
-      # actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
+      actor.arousal = sum(sent_words)/sum(words),
       actor.first = first(sentence_id),
       actor.occ = .N,
       publication_date = first(publication_date)
@@ -211,7 +211,7 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
       actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
-      # actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
+      actor.arousal = sum(sent_words)/sum(words),
       actor.first = first(sentence_id),
       actor.occ = .N,
       publication_date = first(publication_date)
