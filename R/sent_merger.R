@@ -135,26 +135,6 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
                 publication_date = first(publication_date),
                 ids = 'all'), by = list(id)]
 
-    all_ind <- df[str_detect(ids, 'A_'),
-                  .(actor.sent = sum(sent_binary_weighted)/sum(words),
-                    actor.sent_words = sum(sent_words),
-                    actor.words = sum(words),
-                    actor.arousal = sum(sent_words)/sum(words),
-                    actor.first = first(sentence_id),
-                    actor.occ = .N,
-                    publication_date = first(publication_date),
-                    ids = 'ind'), by = list(id)]
-
-    all_par <- df[str_detect(ids, '_f|_s'),
-                  .(actor.sent = sum(sent_binary_weighted)/sum(words),
-                    actor.sent_words = sum(sent_words),
-                    actor.words = sum(words),
-                    actor.arousal = sum(sent_words)/sum(words),
-                    actor.first = first(sentence_id),
-                    actor.occ = .N,
-                    publication_date = first(publication_date),
-                    ids = 'par'), by = list(id)]
-
     ## Unnest to actor level
     df <- df[,.(ids = as.character(unlist(ids))),
              by = list(id,publication_date,sentence_id, sent_sum, words, sent_words,sent_binary_weighted)]
