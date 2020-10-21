@@ -1,15 +1,15 @@
-#' Aggregate sentence-level dataset containing actors (from sentencizer())
+#' Aggregate sentence-level dataset containing sentiment (from sentencizer())
 #'
-#' Aggregate sentence-level dataset containing actors (from sentencizer())
+#' Aggregate sentence-level dataset containing sentiment (from sentencizer())
 #' @param df Data frame with actor ids, produced by sentencizer
-#' @param actors_meta Data frame containing actor metadata obtained using elasticizer(index="actors")
+#' @param actors_meta Optional data frame containing actor metadata obtained using elasticizer(index="actors")
 #' @param actor_groups Optional list of vectors, where each vector contains actor ids to be merged (e.g. merge all left-wing parties)
 #' @param pos_cutoff Optional value above which sentence-level sentiment scores should be considered "positive"
 #' @param neg_cutoff Optional value below which sentence-level sentiment scores should be considered "negative"
 #' @return When no ids, returns actor-article dataset with individual actors, party aggregations, party-actor aggregations and overall actor sentiment (regardless of specific actors). When ids, returns aggregations for each vector in list
 #' @export
 #' @examples
-#' actor_merger(df, actors_meta, ids = NULL)
+#' sent_merger(df, actors_meta, ids = NULL)
 #################################################################################################
 #################################### Generate actor-article dataset #############################
 #################################################################################################
@@ -18,7 +18,7 @@
 ### some individual actors, where the partyId of an individual actor doesn't match an actual
 ### partyId in the actor dataset
 
-actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff = NULL, neg_cutoff = NULL) {
+sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff = NULL, neg_cutoff = NULL) {
   grouper <- function(id2, df) {
     if ('P_1206_a' %in% id2) {
       id2 <- c('P_212_a','P_1771_a',id2)
@@ -61,9 +61,18 @@ actor_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff
   }
 
   ## Unnest to sentence level
-  df <- df[,lapply(.SD, unlist, recursive=F),
-           .SDcols = c('sentence_id', 'sent_sum', 'words', 'sent_words','ids'),
-           by = list(id,publication_date,doctype)]
+
+  ## Check if raw sentiment data contains actor ids
+  if ('ids' %in% colnames(df)) {
+    df <- df[,lapply(.SD, unlist, recursive=F),
+             .SDcols = c('sentence_id', 'sent_sum', 'words', 'sent_words','ids'),
+             by = list(id,publication_date,doctype)]
+  } else {
+    df <- df[,lapply(.SD, unlist, recursive=F),
+             .SDcols = c('sentence_id', 'sent_sum', 'words', 'sent_words'),
+             by = list(id,publication_date,doctype)]
+  }
+
   df <- df[,.(
     (.SD),
     sent = sent_sum/words
