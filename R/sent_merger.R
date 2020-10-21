@@ -208,7 +208,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
     parties <- actors_meta[parties, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfs"), (.SD)), .SDcols = -c('ids')]
 
     ## Join all aggregations into a single data frame, compute derived actor-level measures, and add date dummies
-    df <- bind_rows(actors, parties, parties_actors, all, all_ind, all_par) %>%
+    df <- bind_rows(actors, parties, parties_actors, all) %>%
       left_join(.,text_sent, by=c("id","publication_date")) %>%
       left_join(.,text_noactors, by="id") %>%
       mutate(
