@@ -103,7 +103,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
   if(!is.null(actor_groups)) {
     output <- lapply(actor_groups,grouper, df = df) %>%
       rbindlist(.) %>%
-      left_join(text_sent, by="id") %>%
+      left_join(text_sent, by=c("id","publication_date")) %>%
       mutate(
         actor.prom = actor.occ/text.sentences,
         actor.rel_first = 1-(actor.first/text.sentences),
