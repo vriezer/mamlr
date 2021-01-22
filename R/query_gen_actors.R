@@ -2,7 +2,6 @@
 #'
 #' Generate actor search queries based on data in actor db
 #' @param actor A row from the output of elasticizer() when run on the 'actor' index
-#' @param country 2-letter string indicating the country for which to generate the queries, is related to inflected nouns, definitive forms and genitive forms of names etc.
 #' @param pre_tags Highlighter pre-tag
 #' @param post_tags Highlighter post-tag
 #' @return A data frame containing the queries, related actor ids and actor function
@@ -13,7 +12,7 @@
 #################################################################################################
 #################################### Actor search query generator ###############################
 #################################################################################################
-query_gen_actors <- function(actor, country, pre_tags, post_tags) {
+query_gen_actors <- function(actor, pre_tags, post_tags) {
   generator <- function(country, startdate, enddate, querystring, pre_tags, post_tags, actorid) {
     return(paste0('{"_source": ["ud","title","subtitle","preteaser","teaser","text"],
     "query":
@@ -56,6 +55,7 @@ query_gen_actors <- function(actor, country, pre_tags, post_tags) {
       paste0('\\"',grid[row,]$first,' ',grid[row,]$last,'\\"~',grid[row,]$prox)
     )
   }
+  country <- actor$`_source.country`
   ### Setting linguistic forms for each country ###
   if (country == "no" | country == "dk") {
     genitive <- 's'
