@@ -181,7 +181,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
                       ids %in% str_c('P_',as.character(1630:1647)) ~ 'P_1629',
                       TRUE ~ ids),
       (.SD)
-    ), .SDcols = -c('ids')][,.(
+    ), .SDcols = -c('ids')] %>% .[!duplicated(.,by = c('id','ids','sentence_id')),.(
       actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
@@ -196,7 +196,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
     parties <- df[str_ends(ids,'_f') | str_ends(ids,'_s'),.(
       ids = str_sub(ids, start = 1, end = -3),
       (.SD)
-    ),.SDcols = -c('ids')][,.(
+    ),.SDcols = -c('ids')] %>% .[!duplicated(.,by = c('id','ids','sentence_id')),.(
       actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
