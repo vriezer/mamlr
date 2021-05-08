@@ -141,7 +141,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
 
 
     ## Create aggregate measures for individual actors
-    actors <- df[str_starts(ids, 'A_'),
+    actors <- df[str_starts(ids, 'A_')] %>% .[!duplicated(.,by = c('id','ids','sentence_id')),
                  .(actor.sent = sum(sent_binary_weighted)/sum(words),
                    actor.sent_words = sum(sent_words),
                    actor.words = sum(words),
