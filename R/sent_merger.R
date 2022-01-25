@@ -20,14 +20,9 @@
 
 sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff = NULL, neg_cutoff = NULL) {
   grouper <- function(id2, df) {
-    if ('P_1206_a' %in% id2) {
-      id2 <- c('P_212_a','P_1771_a',id2)
-    }
-    if ('P_1605_a' %in% id2) {
-      id2 <- c('P_1606_a', id2)
-    }
-    if ('P_1629_a' %in% id2) {
-      id2 <- c(str_c('P_',as.character(1630:1647),'_a'), id2)
+    # Prevent usage of deprecated partyId_a ids, which are incorrect and should no longer be used
+    if (any(str_ends(id2, '_a'))) {
+      return("You're seemingly using a deprecated [partyId]_a id in your aggregations")
     }
     return(df[ids %in% id2,] %>%
              .[!duplicated(.,by = c('id','sentence_id')),.(
@@ -137,31 +132,50 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
 
     ## Unnest to actor level
     df <- df[,.(ids = as.character(unlist(ids))),
-             by = list(id,publication_date,sentence_id, sent_sum, words, sent_words,sent_binary_weighted)]
+             by = list(id,publication_date,sentence_id, sent_sum, words, sent_words,sent_binary_weighted)
+            ][ # Remove deprecated actor_partyids from ES database
+             !str_ends(ids, '_a')]
 
-
-    ## Create aggregate measures for individual actors
-    actors <- df[str_starts(ids, 'A_')] %>% .[!duplicated(.,by = c('id','ids','sentence_id')),
-                 .(actor.sent = sum(sent_binary_weighted)/sum(words),
-                   actor.sent_words = sum(sent_words),
-                   actor.words = sum(words),
-                   actor.arousal = sum(sent_words)/sum(words),
-                   actor.first = first(sentence_id),
-                   actor.occ = .N,
-                   publication_date = first(publication_date)), by = list(id, ids)]
-    ## Create actor metadata dataframe per active date (one row per day per actor)
+    ## Prepare actor metadata
     colnames(actors_meta) <- str_replace(colnames(actors_meta),'_source.','')
-    actors_meta <- actors_meta[,
+    actors_meta <- data.table(actors_meta)[,
                                .((.SD),
                                  startDate = as.Date(startDate),
                                  endDate = as.Date(endDate),
-                                 ids = ifelse(actorId != '', actorId, partyId)
+                                 ids = ifelse(!is.na(actorId), actorId, partyId)
                                ), .SDcols = -c('_id','startDate','endDate','_index','_type','_score')
-                               ]
-    actors <- actors_meta[actors,
-                           c('x.startDate','x.endDate',colnames(actors), 'lastName','firstName','function.','gender','yearOfBirth','parlPeriod','partyId','ministerName','ministryId','actorId','startDate','endDate'),
+    ]
+
+    ## Create table with partyIds by date and actorId to join by
+    actors_party <- actors_meta %>%
+      group_by(ids,partyId,startDate,endDate) %>%
+      summarise() %>%
+      na.omit() %>%
+      ungroup() %>%
+      data.table(.)
+    ## Add partyId to each actorId
+    actors <- df[str_starts(ids, 'A_')] %>% # Keep only individual actors
+      actors_party[., c(colnames(.),'partyId'), # Join by actorId, within active period (start/endDate)
+                   on = .(ids == ids, startDate <= publication_date, endDate >= publication_date),
+                   with = F] %>%
+      # Some actors seemingly belong to different parties on the same day, hence basing unique rows on both (actor)ids and partyId
+      .[!duplicated(.,by = c('id','ids','sentence_id','partyId')),] # Keep all unique rows
+
+    ## Create aggregate measures for individual actors
+    actors_merged <- actors %>% .[!duplicated(.,by = c('id','ids','sentence_id')),] %>% # Removing duplicate rows when actor is counted multiple times in the same sentence, because of multiple functions or parties.
+      .[,
+        .(actor.sent = sum(sent_binary_weighted)/sum(words),
+          actor.sent_words = sum(sent_words),
+          actor.words = sum(words),
+          actor.arousal = sum(sent_words)/sum(words),
+          actor.first = first(sentence_id),
+          actor.occ = .N,
+          publication_date = first(publication_date)), by = list(id, ids)]
+
+    ## Create actor metadata dataframe per active date (one row per day per actor)
+    actors_merged <- actors_meta[actors_merged,
+                           c('x.startDate','x.endDate',colnames(actors_merged), 'lastName','firstName','function.','gender','yearOfBirth','parlPeriod','partyId','ministerName','ministryId','actorId','startDate','endDate'),
                            on =.(ids = ids, startDate <= publication_date, endDate >= publication_date),
-                           allow.cartesian = T,
                            mult = 'all',
                            with = F][,.(
                              startDate = x.startDate,
@@ -169,19 +183,15 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
                              (.SD)
                            ), .SDcols = -c('x.startDate', 'x.endDate','startDate','endDate')]
     ## Generate party-actor aggregations (mfsa)
-    # identical(as.data.frame(setcolorder(setorderv(parties_actors,c('id','ids')), colnames(parties_actors_dp))),as.data.frame(parties_actors_dp))
 
+    # Create party data table
     parties_actors <- df[str_starts(ids,'P_'),.(
-      ids = str_sub(ids, start = 1, end = -3),
+      ids = str_sub(ids, start = 1, end = -3), # Reduce ids to base of partyId (without _f or _s)
+      partyId = str_sub(ids, start = 1, end = -3), # Create partyId column for merging
       (.SD)
-    ),.SDcols = -c('ids')][, .(
-      ids = case_when(ids == 'P_212' ~ 'P_1206',
-                      ids == 'P_1771' ~ 'P_1206',
-                      ids == 'P_1606' ~ 'P_1605',
-                      ids %in% str_c('P_',as.character(1630:1647)) ~ 'P_1629',
-                      TRUE ~ ids),
-      (.SD)
-    ), .SDcols = -c('ids')] %>% .[!duplicated(.,by = c('id','ids','sentence_id')),.(
+    ),.SDcols = -c('ids')] %>%
+      rbind(actors,.) %>% # Add actors with partyId column
+    .[!duplicated(.,by = c('id','partyId','sentence_id')),.( # Remove rows (sentences) where a party is counted multiple times
       actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
@@ -189,8 +199,9 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
       actor.first = first(sentence_id),
       actor.occ = .N,
       publication_date = first(publication_date)
-    ), by = c('id','ids')]
-    parties_actors <- actors_meta[parties_actors, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfsa"), (.SD)), .SDcols = -c('ids')]
+    ), by = c('id','partyId')] # Summarize by article and partyId
+    # Add party metadata
+    parties_actors <- actors_meta[parties_actors, on = c('partyId'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfsa"), (.SD)), .SDcols = -c('ids')]
 
     ## Generate party aggregations (mfs)
     parties <- df[str_ends(ids,'_f') | str_ends(ids,'_s'),.(
@@ -208,7 +219,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
     parties <- actors_meta[parties, on = c('ids'), mult = 'first'][!is.na(id),.(ids = str_c(ids,"_mfs"), (.SD)), .SDcols = -c('ids')]
 
     ## Join all aggregations into a single data frame, compute derived actor-level measures, and add date dummies
-    df <- bind_rows(actors, parties, parties_actors, all) %>%
+    df <- bind_rows(actors_merged, parties, parties_actors, all) %>%
       left_join(.,text_sent, by=c("id","publication_date")) %>%
       left_join(.,text_noactors, by="id") %>%
       mutate(
