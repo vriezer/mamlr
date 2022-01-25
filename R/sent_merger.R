@@ -201,7 +201,11 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
       publication_date = first(publication_date)
     ), by = c('id','partyId')] # Summarize by article and partyId
     # Add party metadata
+<<<<<<< HEAD
     parties_actors2 <- actors_meta[str_starts(ids, 'P_')][parties_actors, on = c('partyId'), mult = 'first'][!is.na(id),.(ids = str_c(partyId,"_mfsa"), (.SD)), .SDcols = -c('ids')]
+=======
+    parties_actors <- actors_meta[str_starts(ids, 'P_')][parties_actors, on = c('partyId'), mult = 'first'][!is.na(id),.(ids = str_c(partyId,"_mfsa"), (.SD)), .SDcols = -c('ids')]
+>>>>>>> ce430ca (sent_merger: Correctly add party metadata for _mfsa aggregations)
 
     ## Generate party aggregations (mfs)
     parties <- df[str_ends(ids,'_f') | str_ends(ids,'_s'),.(
