@@ -33,7 +33,9 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               es_path = 'es',
               es_user = 'es',
               es_pwd = es_pwd,
-              errors = 'complete')
+              errors = 'complete',
+              ssl_verifypeer = FALSE,
+              ssl_verifyhost=FALSE)
     }
     if (localhost == T){
       connect(es_port = 9200,
@@ -53,7 +55,9 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               path = 'es',
               user = 'es',
               pwd = es_pwd,
-              errors = 'complete')
+              errors = 'complete',
+              ssl_verifypeer = FALSE,
+              ssl_verifyhost=FALSE)
     }
     if (localhost == T){
       conn <- connect(port = 9200,
