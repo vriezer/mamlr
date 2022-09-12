@@ -4,6 +4,7 @@
 #' @param query A JSON-formatted query in the Elasticsearch query DSL
 #' @param src Logical (true/false) indicating whether or not the source of each document should be retrieved
 #' @param index The name of the Elasticsearch index to search through
+#' @param es_user Username used to connect, defaults to 'es'
 #' @param es_pwd The password for Elasticsearch read access
 #' @param batch_size Batch size
 #' @param max_batch Maximum number batches to retrieve
@@ -20,7 +21,7 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, update = NULL, localhost = F, ...){
+elasticizer <- function(query, src = T, index = 'maml', es_user = 'es', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
@@ -31,7 +32,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               es_transport = 'https',
               es_host = 'linux01.uis.no',
               es_path = 'es',
-              es_user = 'es',
+              es_user = es_user,
               es_pwd = es_pwd,
               errors = 'complete',
               ssl_verifypeer = FALSE,
@@ -42,8 +43,8 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               es_transport = 'http',
               es_host = 'localhost',
               es_path = '',
-              es_user = '',
-              es_pwd = '',
+              es_user = es_user,
+              es_pwd = es_pwd,
               errors = 'complete')
     }
     conn <- NULL
@@ -53,7 +54,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               transport = 'https',
               host = 'linux01.uis.no',
               path = 'es',
-              user = 'es',
+              user = es_user,
               pwd = es_pwd,
               errors = 'complete',
               ssl_verifypeer = FALSE,
@@ -64,8 +65,8 @@ elasticizer <- function(query, src = T, index = 'maml', es_pwd = .rs.askForPassw
               transport = 'http',
               host = 'localhost',
               path = '',
-              user = '',
-              pwd = '',
+              user = es_user,
+              pwd = es_pwd,
               errors = 'complete')
     }
   }
