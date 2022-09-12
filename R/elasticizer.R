@@ -21,7 +21,7 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_user = 'es', es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, update = NULL, localhost = F, ...){
+elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
