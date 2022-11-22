@@ -26,7 +26,6 @@ query_string <- function(query, fields = F, random = F, default_operator = "AND"
               "bool":{
                 "filter": [{
                   "query_string" : {
-                      "default_field" : "text",
                       "query" : "',query,'",
                       "default_operator": "',default_operator,'",
                       "allow_leading_wildcard" : false
@@ -48,7 +47,6 @@ query_string <- function(query, fields = F, random = F, default_operator = "AND"
         "bool":{
           "filter": [{
             "query_string" : {
-                "default_field" : "text",
                 "query" : "',query,'",
                 "default_operator": "',default_operator,'",
                 "allow_leading_wildcard" : false
