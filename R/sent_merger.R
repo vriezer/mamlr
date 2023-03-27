@@ -6,6 +6,7 @@
 #' @param actor_groups Optional list of vectors, where each vector contains actor ids to be merged (e.g. merge all left-wing parties)
 #' @param pos_cutoff Optional value above which sentence-level sentiment scores should be considered "positive"
 #' @param neg_cutoff Optional value below which sentence-level sentiment scores should be considered "negative"
+#' @param single_party Boolean to generate data only from sentences in which a single party is mentioned, defaults to FALSE
 #' @return When no ids, returns actor-article dataset with individual actors, party aggregations, party-actor aggregations and overall actor sentiment (regardless of specific actors). When ids, returns aggregations for each vector in list
 #' @export
 #' @examples
@@ -18,7 +19,7 @@
 ### some individual actors, where the partyId of an individual actor doesn't match an actual
 ### partyId in the actor dataset
 
-sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff = NULL, neg_cutoff = NULL) {
+sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff = NULL, neg_cutoff = NULL, single_party = F) {
   grouper <- function(id2, df) {
     # Prevent usage of deprecated partyId_a ids, which are incorrect and should no longer be used
     if (any(str_ends(id2, '_a'))) {
@@ -30,7 +31,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
                actor.sent_words = sum(sent_words),
                actor.words = sum(words),
                # actor.arousal = sum(abs(sent_binary_weighted))/sum(words),
-               actor.first = first(sentence_id),
+               actor.first = min(sentence_id),
                actor.occ = .N,
                publication_date = first(publication_date),
                ids = str_c(id2, collapse = '-')
@@ -116,7 +117,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
                           noactor.sent_words = sum(sent_words),
                           noactor.words = sum(words),
                           noactor.arousal = sum(sent_words)/sum(words),
-                          noactor.first = first(sentence_id),
+                          noactor.first = min(sentence_id),
                           noactor.occ = .N
                         ), by = list(id)]
 
@@ -125,7 +126,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
                 actor.sent_words = sum(sent_words),
                 actor.words = sum(words),
                 actor.arousal = sum(sent_words)/sum(words),
-                actor.first = first(sentence_id),
+                actor.first = min(sentence_id),
                 actor.occ = .N,
                 publication_date = first(publication_date),
                 ids = 'all'), by = list(id)]
@@ -153,22 +154,34 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
       na.omit() %>%
       ungroup() %>%
       data.table(.)
-    ## Add partyId to each actorId
-    actors <- df[str_starts(ids, 'A_')] %>% # Keep only individual actors
+
+    ## Add partyId to each actorId without filtering parties out
+    df <- df %>%
+      # Fill partyId column for actor mentions
       actors_party[., c(colnames(.),'partyId'), # Join by actorId, within active period (start/endDate)
                    on = .(ids == ids, startDate <= publication_date, endDate >= publication_date),
                    with = F] %>%
+      # Fill partyId column for party mentions
+      .[is.na(partyId), partyId:=str_sub(ids, start = 1, end = -3)] %>%
       # Some actors seemingly belong to different parties on the same day, hence basing unique rows on both (actor)ids and partyId
       .[!duplicated(.,by = c('id','ids','sentence_id','partyId')),] # Keep all unique rows
 
+    ## Removing sentences containing more than one party
+    if(single_party) {
+      # Create variable indicating number of unique party ids per sentence, and keep only sentences where unique parties == 1
+      df <- df %>%
+        .[, upid := length(unique(partyId)), by = c('id','sentence_id')] %>%
+        .[upid == 1,]
+    }
+
     ## Create aggregate measures for individual actors
-    actors_merged <- actors %>% .[!duplicated(.,by = c('id','ids','sentence_id')),] %>% # Removing duplicate rows when actor is counted multiple times in the same sentence, because of multiple functions or parties.
+    actors_merged <- df[str_starts(ids, 'A_')] %>% .[!duplicated(.,by = c('id','ids','sentence_id')),] %>% # Removing duplicate rows when actor is counted multiple times in the same sentence, because of multiple functions or parties.
       .[,
         .(actor.sent = sum(sent_binary_weighted)/sum(words),
           actor.sent_words = sum(sent_words),
           actor.words = sum(words),
           actor.arousal = sum(sent_words)/sum(words),
-          actor.first = first(sentence_id),
+          actor.first = min(sentence_id),
           actor.occ = .N,
           publication_date = first(publication_date)), by = list(id, ids)]
 
@@ -185,18 +198,13 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
     ## Generate party-actor aggregations (mfsa)
 
     # Create party data table
-    parties_actors <- df[str_starts(ids,'P_'),.(
-      ids = str_sub(ids, start = 1, end = -3), # Reduce ids to base of partyId (without _f or _s)
-      partyId = str_sub(ids, start = 1, end = -3), # Create partyId column for merging
-      (.SD)
-    ),.SDcols = -c('ids')] %>%
-      rbind(actors,.) %>% # Add actors with partyId column
+    parties_actors <- df %>%
     .[!duplicated(.,by = c('id','partyId','sentence_id')),.( # Remove rows (sentences) where a party is counted multiple times
       actor.sent = sum(sent_binary_weighted)/sum(words),
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
       actor.arousal = sum(sent_words)/sum(words),
-      actor.first = first(sentence_id),
+      actor.first = min(sentence_id),
       actor.occ = .N,
       publication_date = first(publication_date)
     ), by = c('id','partyId')] # Summarize by article and partyId
@@ -212,7 +220,7 @@ sent_merger <- function(df, actors_meta = NULL, actor_groups = NULL, pos_cutoff 
       actor.sent_words = sum(sent_words),
       actor.words = sum(words),
       actor.arousal = sum(sent_words)/sum(words),
-      actor.first = first(sentence_id),
+      actor.first = min(sentence_id),
       actor.occ = .N,
       publication_date = first(publication_date)
     ), by = c('id','ids')]
