@@ -8,6 +8,7 @@ elasticizer(
   query,
   src = T,
   index = "maml",
+  es_user,
   es_pwd = .rs.askForPassword("Elasticsearch READ"),
   batch_size = 1024,
   max_batch = Inf,
@@ -24,6 +25,8 @@ elasticizer(
 \item{src}{Logical (true/false) indicating whether or not the source of each document should be retrieved}
 
 \item{index}{The name of the Elasticsearch index to search through}
+
+\item{es_user}{Username used to connect, defaults to 'es'}
 
 \item{es_pwd}{The password for Elasticsearch read access}
 

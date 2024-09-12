@@ -9,7 +9,8 @@ sent_merger(
   actors_meta = NULL,
   actor_groups = NULL,
   pos_cutoff = NULL,
-  neg_cutoff = NULL
+  neg_cutoff = NULL,
+  single_party = F
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ sent_merger(
 \item{pos_cutoff}{Optional value above which sentence-level sentiment scores should be considered "positive"}
 
 \item{neg_cutoff}{Optional value below which sentence-level sentiment scores should be considered "negative"}
+
+\item{single_party}{Boolean to generate data only from sentences in which a single party is mentioned, defaults to FALSE}
 }
 \value{
 When no ids, returns actor-article dataset with individual actors, party aggregations, party-actor aggregations and overall actor sentiment (regardless of specific actors). When ids, returns aggregations for each vector in list

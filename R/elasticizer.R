@@ -26,7 +26,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.as
   sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
   ## Transitional code for syntax change in elastic package
-  if (packageVersion("elastic") < 1) {
+  if (packageVersion("elastic") < '1') {
     if (localhost == F) {
       connect(es_port = 443,
               es_transport = 'https',
