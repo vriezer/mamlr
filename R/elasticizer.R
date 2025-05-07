@@ -21,7 +21,7 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, update = NULL, localhost = F, ...){
+elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, file='', update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
@@ -116,7 +116,8 @@ elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.as
     batch <- 1
     print(paste0('Processing documents ',batch*batch_size-batch_size,' through ',batch*batch_size,' out of ',total,' documents.'))
     if (dump) {
-      saveRDS(out, file = paste0('batch_',batch*batch_size,'.Rds'))
+      # saveRDS(out, file = paste0('batch_',batch*batch_size,'.Rds'))
+      write(jsonify:::to_ndjson(out),file=file, append=TRUE)
     }
     if (length(update) > 0){
       update(out, localhost = localhost, ...)
@@ -145,7 +146,8 @@ elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.as
           out <-  jsonlite:::flatten(json$hits$hits)
           update(out, localhost = localhost, ...)
         } else if (dump) {
-          saveRDS(jsonlite:::flatten(json$hits$hits), file = paste0('batch_',batch*batch_size,'.Rds'))
+          # saveRDS(jsonlite:::flatten(json$hits$hits), file = paste0('batch_',batch*batch_size,'.Rds'))
+          write(jsonify:::to_ndjson(jsonlite:::flatten(json$hits$hits)),file=file, append=TRUE)
         } else {
           # Old merging code
           # out <- bind_rows(out, jsonlite:::flatten(json$hits$hits))
