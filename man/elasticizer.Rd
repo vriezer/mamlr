@@ -7,7 +7,7 @@
 elasticizer(
   query,
   src = T,
-  index = "maml",
+  index,
   es_user,
   es_pwd = .rs.askForPassword("Elasticsearch READ"),
   batch_size = 1024,
