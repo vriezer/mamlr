@@ -21,7 +21,7 @@
 #################################################################################################
 #################################### Get data from ElasticSearch ################################
 #################################################################################################
-elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, file='', update = NULL, localhost = F, ...){
+elasticizer <- function(query, src = T, index , es_user, es_pwd = .rs.askForPassword("Elasticsearch READ"), batch_size = 1024, max_batch = Inf, time_scroll = "5m", dump = F, file='', update = NULL, localhost = F, ...){
   retries <- 10 ### Number of retries on error
   sleep <- 30 ### Number of seconds between retries
   httr::set_config(httr::config(http_version = 0))
@@ -30,7 +30,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.as
     if (localhost == F) {
       connect(es_port = 443,
               es_transport = 'https',
-              es_host = 'linux01.uis.no',
+              es_host = 'linux05.uis.no',
               es_path = 'es',
               es_user = es_user,
               es_pwd = es_pwd,
@@ -53,7 +53,7 @@ elasticizer <- function(query, src = T, index = 'maml', es_user, es_pwd = .rs.as
     if (localhost == F) {
       conn <- connect(port = 443,
               transport = 'https',
-              host = 'linux01.uis.no',
+              host = 'linux05.uis.no',
               path = 'es',
               user = es_user,
               pwd = es_pwd,
